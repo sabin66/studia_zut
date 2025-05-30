@@ -1,0 +1,12 @@
+// Maksymalna wartosc amplitudy dla sygnalu : 1 : 63.88281413574113
+// Maksymalna wartosc amplitudy dla sygnalu : 2 : 58.00584732439604
+// Maksymalna wartosc amplitudy dla sygnalu : 3 : 57.2864877285258
+// Szerokość pasma sygnału ask (-3.0dB): 7,81 Hz
+// Szerokość pasma sygnału fsk (-3.0dB): 15,63 Hz
+// Szerokość pasma sygnału psk (-3.0dB): 15,63 Hz
+// Szerokość pasma sygnału ask (-6.0dB): 7,81 Hz
+// Szerokość pasma sygnału fsk (-6.0dB): 15,63 Hz
+// Szerokość pasma sygnału psk (-6.0dB): 31,25 Hz
+// Szerokość pasma sygnału ask (-10.0dB): 7,81 Hz
+// Szerokość pasma sygnału fsk (-10.0dB): 23,44 Hz
+// Szerokość pasma sygnału psk (-10.0dB): 46,88 Hz
