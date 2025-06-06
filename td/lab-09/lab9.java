@@ -1,22 +1,19 @@
 // sd55617
-// pomoca z robieniem zadania byl chatGPT oraz Mikolaj Odzeniak, z ktorym wykonywalem funkcje z powodu powolnej utraty poczytalnosci
 import org.jfree.chart.*;
 import org.jfree.chart.plot.*;
 import org.jfree.data.xy.*;
-import org.jfree.util.ArrayUtilities;
 
 import java.util.Arrays;
 
 public class Main {
 
     public static void main(String[] args) {
-        int[] bits = {0, 1, 0, 1, 1, 0, 1, 0, 1, 1};
+        int[] bits = {0, 0,0,1,1,0,1,1,0,0,0,1};
         double Tc = 2;
         double Tb = Tc / bits.length;
-        double W1 = 10;
-        double W2 = 20;
-        double fn1 = W1 / Tb;
-        double fn2 = W2 / Tb;
+        double W1 = 2;
+        double fn1 = (W1+1) / Tb;
+        double fn2 = (W1+2) / Tb;
         double fs = 8000;
 
         double[] t = generateTime(bits.length, Tb, fs);
@@ -28,6 +25,7 @@ public class Main {
         double[] p2FSK = modulate_p(x2FSK,fs,Tb);
         double[] pFSK = addTwoArrays(p1FSK,p2FSK);
         double[] cFSK = modulate_c(pFSK);
+        int[] bitsFSK = toBits(cFSK,Tb,fs);
 
         plot(t, FSK_signal,"FSK_z(t)");
         plot(t,x1FSK,"x1FSK");
@@ -36,6 +34,7 @@ public class Main {
         plot(t,p2FSK,"p2FSK");
         plot(t,pFSK,"pFSK");
         plot(t,cFSK,"cFSK");
+        System.out.println(Arrays.toString(bitsFSK));
 
 
     }
@@ -102,7 +101,7 @@ public class Main {
     static double[] addTwoArrays(double[] a, double[] b) {
         double[] result = new double[a.length];
         for (int i = 0; i < a.length; i++) {
-            result[i] = a[i] + b[i];
+            result[i] = a[i] - b[i];
         }
         return result;
     }
@@ -117,7 +116,6 @@ public class Main {
                 result[i] = 0;
             }
         }
-
         return result;
     }
 
@@ -141,21 +139,6 @@ public class Main {
         }
         return bits;
     }
-
-    public static double calculateBER(int[] sentBits, int[] receivedBits) {
-        if (sentBits.length != receivedBits.length) {
-            throw new IllegalArgumentException("Długości ciągów bitów muszą być takie same");
-        }
-        int errors = 0;
-        int N = sentBits.length;
-        for (int i = 0; i < N; i++) {
-            if (sentBits[i] != receivedBits[i]) {
-                errors++;
-            }
-        }
-        return (errors / (double) N) * 100.0;
-    }
-
 
     public static void plot(double[] x, double[] y, String title) {
         XYSeries series = new XYSeries(title);
