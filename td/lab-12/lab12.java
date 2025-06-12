@@ -108,7 +108,7 @@ public class Main {
         List<Integer> decoded = HammingDecode74(demodListPSK);
         System.out.println("--------------------PSK--------------------");
         System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(15,11): " + coded);
+        System.out.println("Po Hamming(7,4): " + coded);
         System.out.println("Po demodulacji : " + demodListPSK);
         System.out.println("Ostatecznie    : " + decoded);
         return calculateBER(bits,decoded);
