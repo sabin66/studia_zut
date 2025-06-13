@@ -12,6 +12,26 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 public class Main {
+    private static final int[] DATA_POS   = {2,4,5,6,8,9,10,11,12,13,14};
+    private static final int[] PARITY_POS = {0,1,3,7};
+    private static final int[][] G = new int[11][15];
+    private static final int[][] H = {
+            {1,0,1,0,1,0,1,0,1,0,1,0,1,0,1},
+            {0,1,1,0,0,1,1,0,0,1,1,0,0,1,1},
+            {0,0,0,1,1,1,1,0,0,0,0,1,1,1,1},
+            {0,0,0,0,0,0,0,1,1,1,1,1,1,1,1}
+    };
+    static {
+        for (int j = 0; j < DATA_POS.length; j++) {
+            int dp = DATA_POS[j];
+            G[j][dp] = 1;
+            for (int r = 0; r < PARITY_POS.length; r++) {
+                if (H[r][dp] == 1) {
+                    G[j][ PARITY_POS[r] ] = 1;
+                }
+            }
+        }
+    }
 
     public static void main(String[] args) {
         // sekcja parametrow
@@ -430,26 +450,17 @@ public class Main {
     }
 
     public static int[] HammingCodeInternal1511(int[] bits) {
-        int[] codeword = new int[15];
-
-        codeword[2] = bits[0];
-        codeword[4] = bits[1];
-        codeword[5] = bits[2];
-        codeword[6] = bits[3];
-        codeword[8] = bits[4];
-        codeword[9] = bits[5];
-        codeword[10] = bits[6];
-        codeword[11] = bits[7];
-        codeword[12] = bits[8];
-        codeword[13] = bits[9];
-        codeword[14] = bits[10];
-
-        codeword[0] = codeword[2] ^ codeword[4] ^ codeword[6] ^ codeword[8] ^ codeword[10] ^ codeword[12] ^ codeword[14];
-        codeword[1] = codeword[2] ^ codeword[5] ^ codeword[6] ^ codeword[9] ^ codeword[10] ^ codeword[13] ^ codeword[14];
-        codeword[3] = codeword[4] ^ codeword[5] ^ codeword[6] ^ codeword[11] ^ codeword[12] ^ codeword[13] ^ codeword[14];
-        codeword[7] = codeword[8] ^ codeword[9] ^ codeword[10] ^ codeword[11] ^ codeword[12] ^ codeword[13] ^ codeword[14];
-
-        return codeword;
+        if (bits.length != 11)
+            throw new IllegalArgumentException("Hamming(15,11) wymaga dokładnie 11 bitów danych");
+        int[] cw = new int[15];
+        for (int col = 0; col < 15; col++) {
+            int sum = 0;
+            for (int row = 0; row < 11; row++) {
+                sum += bits[row] * G[row][col];
+            }
+            cw[col] = sum & 1;
+        }
+        return cw;
     }
 
     public static List<Integer> HammingDecode1511(List<Integer> coded){
@@ -469,13 +480,19 @@ public class Main {
     }
 
     public static int[] HammingDecodeInternal1511(int[] coded){
-        int s1 = coded[0]^coded[2]^coded[4]^coded[6]^coded[8]^coded[10]^coded[12]^coded[14];
-        int s2 = coded[1]^coded[2]^coded[5]^coded[6]^coded[9]^coded[10]^coded[13]^coded[14];
-        int s4 = coded[3]^coded[4]^coded[5]^coded[6]^coded[11]^coded[12]^coded[13]^coded[14];
-        int s8 = coded[7]^coded[8]^coded[9]^coded[10]^coded[11]^coded[12]^coded[13]^coded[14];
-        int syndrome = s1 + s2*2 + s4*4 + s8*8;
-        if (syndrome > 0) {
-            coded[syndrome-1] ^= 1;
+        if (coded.length != 15)
+            throw new IllegalArgumentException("Hamming(15,11) dekoduje dokładnie 15 bitów");
+        int syndrome = 0;
+        for (int r = 0; r < 4; r++) {
+            int sum = 0;
+            for (int i = 0; i < 15; i++) {
+                sum += H[r][i] * coded[i];
+            }
+            int bit = sum & 1;
+            syndrome |= (bit << r);
+        }
+        if (syndrome > 0 && syndrome <= 15) {
+            coded[syndrome - 1] ^= 1;
         }
         return coded;
     }
