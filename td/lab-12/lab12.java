@@ -12,23 +12,43 @@ import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
 public class Main {
-    private static final int[] DATA_POS   = {2,4,5,6,8,9,10,11,12,13,14};
-    private static final int[] PARITY_POS = {0,1,3,7};
-    private static final int[][] G = new int[11][15];
-    private static final int[][] H = {
-            {1,0,1,0,1,0,1,0,1,0,1,0,1,0,1},
-            {0,1,1,0,0,1,1,0,0,1,1,0,0,1,1},
-            {0,0,0,1,1,1,1,0,0,0,0,1,1,1,1},
-            {0,0,0,0,0,0,0,1,1,1,1,1,1,1,1}
-    };
+    private static final int n = 15;
+    private static final int k = 11;
+    private static final int r = n - k;
+
+    private static final int[] PARITY_POS_1 = {1, 2, 4, 8};
+
+    private static final int[] DATA_POS_1 = new int[k];
     static {
-        for (int j = 0; j < DATA_POS.length; j++) {
-            int dp = DATA_POS[j];
-            G[j][dp] = 1;
-            for (int r = 0; r < PARITY_POS.length; r++) {
-                if (H[r][dp] == 1) {
-                    G[j][ PARITY_POS[r] ] = 1;
+        int idx = 0;
+        outer:
+        for (int i = 1; i <= n; i++) {
+            for (int p : PARITY_POS_1) {
+                if (p == i) continue outer;
+            }
+            DATA_POS_1[idx++] = i;
+        }
+    }
+
+    private static final int[][] G = new int[k][n];
+    static {
+        for (int row = 0; row < k; row++) {
+            int dataPos0 = DATA_POS_1[row] - 1;
+            G[row][dataPos0] = 1;
+            for (int i = 0; i < r; i++) {
+                if (((DATA_POS_1[row] >> i) & 1) == 1) {
+                    int parityCol0 = PARITY_POS_1[i] - 1;
+                    G[row][parityCol0] = 1;
                 }
+            }
+        }
+    }
+
+    private static final int[][] H = new int[r][n];
+    static {
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < n; j++) {
+                H[i][j] = ((j+1) >> i) & 1;
             }
         }
     }
