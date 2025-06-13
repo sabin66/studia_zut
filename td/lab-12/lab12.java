@@ -469,52 +469,54 @@ public class Main {
         return encoded;
     }
 
-    public static int[] HammingCodeInternal1511(int[] bits) {
-        if (bits.length != 11)
-            throw new IllegalArgumentException("Hamming(15,11) wymaga dokładnie 11 bitów danych");
-        int[] cw = new int[15];
-        for (int col = 0; col < 15; col++) {
+    private static final int[][] P = new int[k][r];
+    static {
+        for(int j=0;j<k;j++){
+            for(int i=0;i<r;i++){
+                P[j][i] = ((j+1) >> i) & 1;
+            }
+        }
+    }
+
+    public static int[] HammingCodeInternal1511(int[] m) {
+        int[] c = new int[n];
+        for(int i=0;i<r;i++){
             int sum = 0;
-            for (int row = 0; row < 11; row++) {
-                sum += bits[row] * G[row][col];
+            for(int j=0;j<k;j++){
+                sum += m[j]*P[j][i];
             }
-            cw[col] = sum & 1;
+            c[i] = sum & 1;
         }
-        return cw;
+        System.arraycopy(m, 0, c, r, k);
+        return c;
     }
 
-    public static List<Integer> HammingDecode1511(List<Integer> coded){
-        List<Integer> decoded = new ArrayList<>();
-        for (int i = 0; i < coded.size(); i+=15) {
-            int[] newBlock = new int[15];
-            for (int j = 0; j < 15; j++) {
-                newBlock[j] = coded.get(i + j);
-            }
-            int[] corrected = HammingDecodeInternal1511(newBlock);
-            int[] dataPosition = {2,4,5,6,8,9,10,11,12,13,14};
-            for(int pos :dataPosition){
-                decoded.add(corrected[pos]);
+    public static List<Integer> HammingDecode1511(List<Integer> coded) {
+        List<Integer> msg = new ArrayList<>();
+        for(int i=0; i<coded.size(); i+=n) {
+            int[] block = new int[n];
+            for(int j=0;j<n;j++) block[j] = coded.get(i+j);
+            int[] corr = HammingDecodeInternal(block);
+            for(int j=0;j<k;j++){
+                msg.add(corr[r + j]);
             }
         }
-        return decoded;
+        return msg;
     }
 
-    public static int[] HammingDecodeInternal1511(int[] coded){
-        if (coded.length != 15)
-            throw new IllegalArgumentException("Hamming(15,11) dekoduje dokładnie 15 bitów");
+    public static int[] HammingDecodeInternal1511(int[] c) {
         int syndrome = 0;
-        for (int r = 0; r < 4; r++) {
-            int sum = 0;
-            for (int i = 0; i < 15; i++) {
-                sum += H[r][i] * coded[i];
+        for(int i=0;i<r;i++){
+            int sum = c[i];
+            for(int j=0;j<k;j++){
+                sum += c[r+j]*P[j][i];
             }
-            int bit = sum & 1;
-            syndrome |= (bit << r);
+            if((sum & 1) == 1) syndrome |= 1<<i;
         }
-        if (syndrome > 0 && syndrome <= 15) {
-            coded[syndrome - 1] ^= 1;
+        if(syndrome>0 && syndrome<=n) {
+            c[syndrome-1] ^= 1;
         }
-        return coded;
+        return c;
     }
 
     static List<Integer> HammingCode74(int[] bits) {
