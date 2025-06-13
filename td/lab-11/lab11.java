@@ -1,10 +1,50 @@
 // sd55617
-// pomoc przy funkcji HammingCodeInternal - https://www.youtube.com/watch?v=mtILckTBtI8&ab_channel=Dr.Dhiman%28Learntheartofproblemsolving%29
+// pomoc przy funkcji tworzenia macierzy, HammingCodeInternal i HammingDecodeInternal - ChatGPT
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
 public class Main {
+    private static final int n = 15;
+    private static final int k = 11;
+    private static final int r = n - k;
+
+    private static final int[] PARITY_POS_1 = {1, 2, 4, 8};
+
+    private static final int[] DATA_POS_1 = new int[k];
+    static {
+        int idx = 0;
+        outer:
+        for (int i = 1; i <= n; i++) {
+            for (int p : PARITY_POS_1) {
+                if (p == i) continue outer;
+            }
+            DATA_POS_1[idx++] = i;
+        }
+    }
+
+    private static final int[][] G = new int[k][n];
+    static {
+        for (int row = 0; row < k; row++) {
+            int dataPos0 = DATA_POS_1[row] - 1;
+            G[row][dataPos0] = 1;
+            for (int i = 0; i < r; i++) {
+                if (((DATA_POS_1[row] >> i) & 1) == 1) {
+                    int parityCol0 = PARITY_POS_1[i] - 1;
+                    G[row][parityCol0] = 1;
+                }
+            }
+        }
+    }
+
+    private static final int[][] H = new int[r][n];
+    static {
+        for (int i = 0; i < r; i++) {
+            for (int j = 0; j < n; j++) {
+                H[i][j] = ((j+1) >> i) & 1;
+            }
+        }
+    }
 
     public static void main(String[] args) {
         int[] bits = {
@@ -78,55 +118,58 @@ public class Main {
 
         return encoded;
     }
-    public static int[] HammingCodeInternal(int[] bits) {
-        int[] codeword = new int[15];
 
-        codeword[2] = bits[0];
-        codeword[4] = bits[1];
-        codeword[5] = bits[2];
-        codeword[6] = bits[3];
-        codeword[8] = bits[4];
-        codeword[9] = bits[5];
-        codeword[10] = bits[6];
-        codeword[11] = bits[7];
-        codeword[12] = bits[8];
-        codeword[13] = bits[9];
-        codeword[14] = bits[10];
-
-        codeword[0] = codeword[2] ^ codeword[4] ^ codeword[6] ^ codeword[8] ^ codeword[10] ^ codeword[12] ^ codeword[14];
-        codeword[1] = codeword[2] ^ codeword[5] ^ codeword[6] ^ codeword[9] ^ codeword[10] ^ codeword[13] ^ codeword[14];
-        codeword[3] = codeword[4] ^ codeword[5] ^ codeword[6] ^ codeword[11] ^ codeword[12] ^ codeword[13] ^ codeword[14];
-        codeword[7] = codeword[8] ^ codeword[9] ^ codeword[10] ^ codeword[11] ^ codeword[12] ^ codeword[13] ^ codeword[14];
-
-        return codeword;
-    }
-    public static List<Integer> HammingDecode(List<Integer> coded){
-        List<Integer> decoded = new ArrayList<>();
-        for (int i = 0; i < coded.size(); i+=15) {
-            int[] newBlock = new int[15];
-            for (int j = 0; j < 15; j++) {
-                newBlock[j] = coded.get(i + j);
-            }
-            int[] corrected = HammingDecodeInternal(newBlock);
-            int[] dataPosition = {2,4,5,6,8,9,10,11,12,13,14};
-            for(int pos :dataPosition){
-                decoded.add(corrected[pos]);
+    private static final int[][] P = new int[k][r];
+    static {
+        for(int j=0;j<k;j++){
+            for(int i=0;i<r;i++){
+                P[j][i] = ((j+1) >> i) & 1;
             }
         }
-        return decoded;
     }
-    public static int[] HammingDecodeInternal(int[] coded){
-        int s1 = coded[0]^coded[2]^coded[4]^coded[6]^coded[8]^coded[10]^coded[12]^coded[14];
-        int s2 = coded[1]^coded[2]^coded[5]^coded[6]^coded[9]^coded[10]^coded[13]^coded[14];
-        int s4 = coded[3]^coded[4]^coded[5]^coded[6]^coded[11]^coded[12]^coded[13]^coded[14];
-        int s8 = coded[7]^coded[8]^coded[9]^coded[10]^coded[11]^coded[12]^coded[13]^coded[14];
-        int syndrome = s1 + s2*2 + s4*4 + s8*8;
-        if (syndrome > 0) {
-            System.out.println(syndrome);
-            coded[syndrome-1] ^= 1;
+
+    public static int[] HammingCodeInternal(int[] m) {
+        int[] c = new int[n];
+        for(int i=0;i<r;i++){
+            int sum = 0;
+            for(int j=0;j<k;j++){
+                sum += m[j]*P[j][i];
+            }
+            c[i] = sum & 1;
         }
-        return coded;
+        System.arraycopy(m, 0, c, r, k);
+        return c;
     }
+
+    public static List<Integer> HammingDecode(List<Integer> coded) {
+        List<Integer> msg = new ArrayList<>();
+        for(int i=0; i<coded.size(); i+=n) {
+            int[] block = new int[n];
+            for(int j=0;j<n;j++) block[j] = coded.get(i+j);
+            int[] corr = HammingDecodeInternal(block);
+            for(int j=0;j<k;j++){
+                msg.add(corr[r + j]);
+            }
+        }
+        return msg;
+    }
+
+
+    public static int[] HammingDecodeInternal(int[] c) {
+        int syndrome = 0;
+        for(int i=0;i<r;i++){
+            int sum = c[i];
+            for(int j=0;j<k;j++){
+                sum += c[r+j]*P[j][i];
+            }
+            if((sum & 1) == 1) syndrome |= 1<<i;
+        }
+        if(syndrome>0 && syndrome<=n) {
+            c[syndrome-1] ^= 1;
+        }
+        return c;
+    }
+
     public static List<Integer> makeError(List<Integer> coded){
         List<Integer> tmp = new ArrayList<>(coded);
         Random rnd = new Random();
