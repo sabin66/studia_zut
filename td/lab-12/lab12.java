@@ -1,20 +1,23 @@
 // sd55617
-import java.awt.*;
+// zadanie bylo robione razem z Andriim Zhupanovem
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Random;
-import javax.swing.*;
-
+import java.awt.Dimension;
+import javax.swing.JFrame;
+import java.util.LinkedList;
 import org.jfree.chart.ChartFactory;
 import org.jfree.chart.ChartPanel;
 import org.jfree.chart.JFreeChart;
 import org.jfree.data.xy.XYSeries;
 import org.jfree.data.xy.XYSeriesCollection;
+
 public class Main {
     private static final int n = 15;
     private static final int k = 11;
     private static final int r = n - k;
+    public static final int h = 540;
 
     private static final int[] PARITY_POS_1 = {1, 2, 4, 8};
 
@@ -64,387 +67,264 @@ public class Main {
                 0,1,0,0,1,1,1,1,0,1,0
         };
         double A1 = 1, A2 = 2, A = 3;
-        double Tc = 2;
+        double Tc = 20;
         double Tb = Tc / bits.length;
         double W  = 2;
         double fn = W / Tb;
         double fn1 = (W+1) / Tb;
         double fn2 = (W+2) / Tb;
-        double fs = 8000;
-        List<Double> berASK1511_alpha = new ArrayList<>();
-        List<Double> berPSK1511_alpha = new ArrayList<>();
-        List<Double> berFSK1511_alpha = new ArrayList<>();
-        List<Double> berASK74_alpha  = new ArrayList<>();
-        List<Double> berPSK74_alpha  = new ArrayList<>();
-        List<Double> berFSK74_alpha  = new ArrayList<>();
-        List<Double> berASK1511_beta = new ArrayList<>();
-        List<Double> berPSK1511_beta = new ArrayList<>();
-        List<Double> berFSK1511_beta = new ArrayList<>();
-        List<Double> berASK74_beta  = new ArrayList<>();
-        List<Double> berPSK74_beta  = new ArrayList<>();
-        List<Double> berFSK74_beta  = new ArrayList<>();
-        double[] t = generateTime(bits.length,Tb,fs);
-        double[] alphas = {0.3,0.6,0.9,1.2,1.5,1.8,2.1,2.4,2.7,3.0};
-        double[] betas = {0.0,0.2,0.4,0.6,0.8,1.0,1.2,1.4,1.6,1.8,2.0};
+        double fs = 2000;
+
+        List<Double> berASK1511 = new ArrayList<>();
+        List<Double> berPSK1511 = new ArrayList<>();
+        List<Double> berFSK1511 = new ArrayList<>();
+        List<Double> berASK74  = new ArrayList<>();
+        List<Double> berPSK74  = new ArrayList<>();
+        List<Double> berFSK74  = new ArrayList<>();
+
         int counter = 0;
+        double[] alphas = new double[40];
 
-        for(double alpha : alphas){
-            berASK1511_alpha.add(askHamming1511_alpha(bits, A1, A2, fn, fs, Tb, A, alpha));
-            berPSK1511_alpha.add(pskHamming1511_alpha(bits, fn, fs, Tb, A, alpha));
-            berFSK1511_alpha.add(fskHamming1511_alpha(bits, fn1, fn2, fs, Tb, alpha));
-            berASK74_alpha.add(askHamming74_alpha(bits, A1, A2, fn, fs, Tb, A, alpha));
-            berPSK74_alpha.add(pskHamming74_alpha(bits, fn, fs, Tb, A, alpha));
-            berFSK74_alpha.add(fskHamming74_alpha(bits, fn1, fn2, fs, Tb, alpha));
-        }
-        for(double beta : betas){
-            berASK1511_beta.add(askHamming1511_beta(bits, A1, A2, fn, fs, Tb, A, beta, t, Tc));
-            berPSK1511_beta.add(pskHamming1511_beta(bits, fn, fs, Tb, A, beta, t, Tc));
-            berFSK1511_beta.add(fskHamming1511_beta(bits, fn1, fn2, fs, Tb, beta, t, Tc));
-            berASK74_beta.add(askHamming74_beta(bits, A1, A2, fn, fs, Tb, A, beta, t, Tc));
-            berPSK74_beta.add(pskHamming74_beta(bits, fn, fs, Tb, A, beta, t, Tc));
-            berFSK74_beta.add(fskHamming74_beta(bits, fn1, fn2, fs, Tb, beta, t, Tc));
+        System.out.println("BER ASK(7/4), alpha=0: " + askHamming74(bits, A1, A2, fn, fs, Tb, A, 0.0));
+        System.out.println("BER PSK(7/4), alpha=0: " + pskHamming74(bits, fn, fs, Tb, A, 0.0));
+        System.out.println("BER FSK(7/4), alpha=0: " + fskHamming74(bits, fn1, fn2, fs, Tb, 0.0));
+
+        System.out.println("BER ASK(15/11), alpha=0: " + askHamming1511(bits, A1, A2, fn, fs, Tb, A, 0.0));
+        System.out.println("BER PSK(15/11), alpha=0: " + pskHamming1511(bits, fn, fs, Tb, A, 0.0));
+        System.out.println("BER FSK(15/11), alpha=0: " + fskHamming1511(bits, fn1, fn2, fs, Tb, 0.0));
+
+        for(double alpha = 0; alpha < 12; alpha+=0.3) {
+            alphas[counter] = alpha;
+            berASK74.add(askHamming74(bits, A1, A2, fn, fs, Tb, A, alpha));
+            berPSK74.add(pskHamming74(bits, fn, fs, Tb, A, alpha));
+            berFSK74.add(fskHamming74(bits, fn1, fn2, fs, Tb, alpha));
+            berASK1511.add(askHamming1511(bits, A1, A2, fn, fs, Tb, A, alpha));
+            berPSK1511.add(pskHamming1511(bits, fn, fs, Tb, A, alpha));
+            berFSK1511.add(fskHamming1511(bits, fn1, fn2, fs, Tb, alpha));
+            System.out.println(counter);
             counter++;
-            System.out.println("-------------------------------------" + counter + "--------------------------------------");
         }
-        showPlotsAlfa(berASK1511_alpha, berPSK1511_alpha,berFSK1511_alpha, berASK74_alpha, berPSK74_alpha, berFSK74_alpha, alphas);
-        showPlotsBeta(berASK1511_beta,berPSK1511_beta,berFSK1511_beta,berASK74_beta, berPSK74_beta, berFSK74_beta, betas);
-    }
-    private static void showPlotsBeta(List<Double> berASK1511, List<Double> berPSK1511, List<Double> berFSK1511,
-                                      List<Double> berASK74, List<Double> berPSK74,List<Double> berFSK74, double[] betas) {
-        double[] dASK15 = toArray(berASK1511);
-        double[] dPSK15 = toArray(berPSK1511);
-        double[] dFSK15 = toArray(berFSK1511);
-        double[] dASK74 = toArray(berASK74);
-        double[] dPSK74 = toArray(berPSK74);
-        double[] dFSK74 = toArray(berFSK74);
-        double[][] allBers = { dASK15, dPSK15, dFSK15, dASK74, dPSK74, dFSK74 };
-        String[] titles = {
-                "ASK 15/11", "PSK 15/11",
-                "FSK 15/11",  "ASK 7/4",
-                "PSK 7/4 ", "FSK 7/4"
-        };
-        showSingleSeriesChart("BER vs β", betas, allBers, titles);
-
-    }
-    private static void showPlotsAlfa(List<Double> berASK1511, List<Double> berPSK1511, List<Double> berFSK1511,
-                                  List<Double> berASK74, List<Double> berPSK74,List<Double> berFSK74, double[] alphas) {
-        double[] dASK15 = toArray(berASK1511);
-        double[] dPSK15 = toArray(berPSK1511);
-        double[] dFSK15 = toArray(berFSK1511);
-        double[] dASK74 = toArray(berASK74);
-        double[] dPSK74 = toArray(berPSK74);
-        double[] dFSK74 = toArray(berFSK74);
-        double[][] allBers = { dASK15, dPSK15, dFSK15, dASK74, dPSK74, dFSK74 };
-        String[] titles = {
-                "ASK 15/11", "PSK 15/11",
-                "FSK 15/11",  "ASK 7/4",
-                "PSK 7/4 ", "FSK 7/4"
-        };
-        showSingleSeriesChart("BER vs α", alphas, allBers, titles);
-
+        showCombinedPlot(berASK1511, berPSK1511, berFSK1511, berASK74, berPSK74, berFSK74, alphas);
     }
 
-    private static double askHamming74_alpha(int[] bits, double A1, double A2, double fn, double fs, double Tb, double A, double alpha) {
+    private static void showCombinedPlot(
+            List<Double> berASK1511, List<Double> berPSK1511, List<Double> berFSK1511,
+            List<Double> berASK74, List<Double> berPSK74, List<Double> berFSK74, double[] alphas) {
+
+        XYSeriesCollection dataset = new XYSeriesCollection();
+
+        String[] labels = {"ASK 15/11", "PSK 15/11", "FSK 15/11", "ASK 7/4", "PSK 7/4", "FSK 7/4"};
+        List<List<Double>> all = List.of(berASK1511, berPSK1511, berFSK1511, berASK74, berPSK74, berFSK74);
+
+        for (int i = 0; i < all.size(); i++) {
+            XYSeries series = new XYSeries(labels[i]);
+            for (int j = 0; j < alphas.length; j++) {
+                series.add(alphas[j], all.get(i).get(j));
+            }
+            dataset.addSeries(series);
+        }
+
+        JFreeChart chart = ChartFactory.createXYLineChart(
+                "BER vs α (dla wszystkich modulacji i kodów Hamminga)",
+                "α (poziom szumu)",
+                "BER (%)",
+                dataset
+        );
+
+        ChartPanel panel = new ChartPanel(chart);
+        panel.setPreferredSize(new Dimension(800, 500));
+
+        JFrame frame = new JFrame("Zbiorczy wykres BER");
+        frame.setContentPane(panel);
+        frame.pack();
+        frame.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
+        frame.setVisible(true);
+    }
+
+
+    private static double askHamming74(int[] bits, double A1, double A2, double fn, double fs, double Tb, double A, double alpha) {
+
         List<Integer> coded = HammingCode74(bits);
 
-        double[] analogASK = ASK(coded, A1, A2, fn, fs, Tb);
-        double[] carrierASK = modulate_x(analogASK, fn, fs, A);
+        double[] ASK = za(A1,A2,coded,fn,fs,Tb);
 
-        double[] noisyASK = addWhiteNoise(carrierASK, alpha);
+        double[] xASK = xt(ASK,fn,fs,A,0);
 
-        double[] pASK = modulate_p(noisyASK, fs, Tb);
-        double[] cASK = modulate_c(pASK);
-        int[] demodBitsASK = toBits(cASK, Tb, fs);
+        double[] noiseASK = addWhiteNoise(xASK,alpha);
+
+        double[] pASK = pt(noiseASK,fs,Tb);
+
+        int[] cASK = ct(pASK,h);
+
+        int[] result = changeToBits(cASK,Tb,fs);
 
         List<Integer> demodListASK = new ArrayList<>();
-        for (int b : demodBitsASK) demodListASK.add(b);
+
+        for (int b : result) demodListASK.add(b);
 
         List<Integer> decoded = HammingDecode74(demodListASK);
-        System.out.println("--------------------ASK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(7,4): " + coded);
-        System.out.println("Po demodulacji : " + demodListASK);
-        System.out.println("Ostatecznie    : " + decoded);
+
+//        System.out.println("--------------------ASK--------------------");
+//        System.out.println("Wejściowe      : " + Arrays.toString(bits));
+//        System.out.println("Po Hamming(7,4): " + coded);
+//        System.out.println("Po demodulacji : " + demodListASK);
+//        System.out.println("Ostatecznie    : " + decoded);
         return calculateBER(bits,decoded);
     }
 
-    private static double pskHamming74_alpha(int[] bits, double fn, double fs, double Tb, double A, double alpha) {
+    private static double pskHamming74(int[] bits, double fn, double fs, double Tb, double A, double alpha) {
         List<Integer> coded = HammingCode74(bits);
 
-        double[] analogPSK = PSK(coded,A,fn, fs, Tb);
-        double[] carrierPSK = modulate_x(analogPSK, fn, fs, A);
+        double[] PSK = zp(coded,fn,fs,Tb);
 
-        double[] noisyPSK = addWhiteNoise(carrierPSK, alpha);
+        double[] xPSK = xt(PSK,fn,fs,A,Math.PI);
 
-        double[] pPSK = modulate_p(noisyPSK, fs, Tb);
-        double[] cPSK = modulate_c(pPSK);
-        int[] demodBitsPSK = toBits(cPSK, Tb, fs);
+        double[] noisePSK = addWhiteNoise(xPSK,alpha);
+
+        double[] pPSK = pt(noisePSK,fs,Tb);
+
+        int[] cPSK = ct(pPSK,0);
+
+        int[] result = changeToBits(cPSK,Tb,fs);
 
         List<Integer> demodListPSK = new ArrayList<>();
-        for (int b : demodBitsPSK) demodListPSK.add(b);
+
+        for (int b : result) demodListPSK.add(b);
 
         List<Integer> decoded = HammingDecode74(demodListPSK);
-        System.out.println("--------------------PSK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(7,4): " + coded);
-        System.out.println("Po demodulacji : " + demodListPSK);
-        System.out.println("Ostatecznie    : " + decoded);
+//        System.out.println("--------------------PSK--------------------");
+//        System.out.println("Wejściowe      : " + Arrays.toString(bits));
+//        System.out.println("Po Hamming(15,11): " + coded);
+//        System.out.println("Po demodulacji : " + demodListPSK);
+//        System.out.println("Ostatecznie    : " + decoded);
         return calculateBER(bits,decoded);
     }
 
-    private static double fskHamming74_alpha(int[] bits,double fn1,double fn2, double fs, double Tb, double alpha) {
+    private static double fskHamming74(int[] bits,double fn1,double fn2, double fs, double Tb, double alpha) {
         List<Integer> coded = HammingCode74(bits);
 
-        double[] analogFSK = FSK(coded,fn1,fn2,fs,Tb);
-        double[] carrierFSK1 = modulate_x1(analogFSK, fn1, fs, Tb);
-        double[] carrierFSK2 = modulate_x2(analogFSK, fn1, fs, Tb);
+        double[] FSK = zf(coded,fn1,fn2,fs,Tb);
 
-        double[] noisyFSK1 = addWhiteNoise(carrierFSK1, alpha);
-        double[] noisyFSK2 = addWhiteNoise(carrierFSK2, alpha);
+        double[] xFSK1 = xt1(FSK,fn1,fs);
 
-        double[] pFSK1 = modulate_p(noisyFSK1, fs, Tb);
-        double[] pFSK2 = modulate_p(noisyFSK2, fs, Tb);
-        double[] pFSK = addTwoArrays(pFSK1, pFSK2);
-        double[] cFSK = modulate_cfsk(pFSK);
-        int[] demodBitsFSK = toBits(cFSK, Tb, fs);
+        double[] xFSK2 = xt1(FSK,fn2,fs);
+
+        double[] noiseFSK1 = addWhiteNoise(xFSK1,alpha);
+
+        double[] noiseFSK2 = addWhiteNoise(xFSK2,alpha);
+
+        double[] pFSK1 = pt(noiseFSK1,fs,Tb);
+
+        double[] pFSK2 = pt(noiseFSK2,fs,Tb);
+
+        double[] pFSK = SubtractArrays(pFSK1,pFSK2);
+
+        int[] cFSK = ct(pFSK,0);
+
+        int[] result = changeToBits(cFSK,Tb,fs);
 
         List<Integer> demodListFSK = new ArrayList<>();
-        for (int b : demodBitsFSK) demodListFSK.add(b);
+
+        for (int b : result) demodListFSK.add(b);
 
         List<Integer> decoded = HammingDecode74(demodListFSK);
-        System.out.println("--------------------FSK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(7,4): " + coded);
-        System.out.println("Po demodulacji : " + demodListFSK);
-        System.out.println("Ostatecznie    : " + decoded);
+//        System.out.println("--------------------FSK--------------------");
+//        System.out.println("Wejściowe      : " + Arrays.toString(bits));
+//        System.out.println("Po Hamming(7,4): " + coded);
+//        System.out.println("Po demodulacji : " + demodListFSK);
+//        System.out.println("Ostatecznie    : " + decoded);
         return calculateBER(bits,decoded);
     }
 
-    private static double askHamming1511_alpha(int[] bits, double A1, double A2, double fn, double fs, double Tb, double A, double alpha) {
+    private static double askHamming1511(int[] bits, double A1, double A2, double fn, double fs, double Tb, double A, double alpha) {
         List<Integer> coded = HammingCode1511(bits);
 
-        double[] analogASK = ASK(coded, A1, A2, fn, fs, Tb);
-        double[] carrierASK = modulate_x(analogASK, fn, fs, A);
+        double[] ASK = za(A1,A2,coded,fn,fs,Tb);
 
-        double[] noisyASK = addWhiteNoise(carrierASK, alpha);
+        double[] xASK = xt(ASK,fn,fs,A,0);
 
-        double[] pASK = modulate_p(noisyASK, fs, Tb);
-        double[] cASK = modulate_c(pASK);
-        int[] demodBitsASK = toBits(cASK, Tb, fs);
+        double[] noiseASK = addWhiteNoise(xASK,alpha);
+
+        double[] pASK = pt(noiseASK,fs,Tb);
+
+        int[] cASK = ct(pASK,h);
+
+        int[] result = changeToBits(cASK,Tb,fs);
 
         List<Integer> demodListASK = new ArrayList<>();
-        for (int b : demodBitsASK) demodListASK.add(b);
+
+        for (int b : result) demodListASK.add(b);
 
         List<Integer> decoded = HammingDecode1511(demodListASK);
-        System.out.println("--------------------ASK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(15,11): " + coded);
-        System.out.println("Po demodulacji : " + demodListASK);
-        System.out.println("Ostatecznie    : " + decoded);
+//        System.out.println("--------------------ASK--------------------");
+//        System.out.println("Wejściowe      : " + Arrays.toString(bits));
+//        System.out.println("Po Hamming(15,11): " + coded);
+//        System.out.println("Po demodulacji : " + demodListASK);
+//        System.out.println("Ostatecznie    : " + decoded);
         return calculateBER(bits,decoded);
     }
 
-    private static double pskHamming1511_alpha(int[] bits, double fn, double fs, double Tb, double A, double alpha) {
+    private static double pskHamming1511(int[] bits, double fn, double fs, double Tb, double A, double alpha) {
         List<Integer> coded = HammingCode1511(bits);
 
-        double[] analogPSK = PSK(coded,A,fn, fs, Tb);
-        double[] carrierPSK = modulate_x(analogPSK, fn, fs, A);
+        double[] PSK = zp(coded,fn,fs,Tb);
 
-        double[] noisyPSK = addWhiteNoise(carrierPSK, alpha);
+        double[] xPSK = xt(PSK,fn,fs,A,Math.PI);
 
-        double[] pPSK = modulate_p(noisyPSK, fs, Tb);
-        double[] cPSK = modulate_c(pPSK);
-        int[] demodBitsPSK = toBits(cPSK, Tb, fs);
+        double[] noisePSK = addWhiteNoise(xPSK,alpha);
+
+        double[] pPSK = pt(noisePSK,fs,Tb);
+
+        int[] cPSK = ct(pPSK,0);
+
+        int[] result = changeToBits(cPSK,Tb,fs);
 
         List<Integer> demodListPSK = new ArrayList<>();
-        for (int b : demodBitsPSK) demodListPSK.add(b);
+
+        for (int b : result) demodListPSK.add(b);
 
         List<Integer> decoded = HammingDecode1511(demodListPSK);
-        System.out.println("--------------------PSK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(15,11): " + coded);
-        System.out.println("Po demodulacji : " + demodListPSK);
-        System.out.println("Ostatecznie    : " + decoded);
+//        System.out.println("--------------------PSK--------------------");
+//        System.out.println("Wejściowe      : " + Arrays.toString(bits));
+//        System.out.println("Po Hamming(15,11): " + coded);
+//        System.out.println("Po demodulacji : " + demodListPSK);
+//        System.out.println("Ostatecznie    : " + decoded);
         return calculateBER(bits,decoded);
     }
 
-    private static double fskHamming1511_alpha(int[] bits,double fn1,double fn2, double fs, double Tb, double alpha) {
+    private static double fskHamming1511(int[] bits,double fn1,double fn2, double fs, double Tb, double alpha) {
         List<Integer> coded = HammingCode1511(bits);
 
-        double[] analogFSK = FSK(coded,fn1,fn2,fs,Tb);
-        double[] carrierFSK1 = modulate_x1(analogFSK, fn1, fs, Tb);
-        double[] carrierFSK2 = modulate_x2(analogFSK, fn1, fs, Tb);
+        double[] FSK = zf(coded,fn1,fn2,fs,Tb);
 
-        double[] noisyFSK1 = addWhiteNoise(carrierFSK1, alpha);
-        double[] noisyFSK2 = addWhiteNoise(carrierFSK2, alpha);
+        double[] xFSK1 = xt1(FSK,fn1,fs);
 
-        double[] pFSK1 = modulate_p(noisyFSK1, fs, Tb);
-        double[] pFSK2 = modulate_p(noisyFSK2, fs, Tb);
-        double[] pFSK = addTwoArrays(pFSK1, pFSK2);
-        double[] cFSK = modulate_cfsk(pFSK);
-        int[] demodBitsFSK = toBits(cFSK, Tb, fs);
+        double[] xFSK2 = xt1(FSK,fn2,fs);
+
+        double[] noiseFSK1 = addWhiteNoise(xFSK1,alpha);
+
+        double[] noiseFSK2 = addWhiteNoise(xFSK2,alpha);
+
+        double[] pFSK1 = pt(noiseFSK1,fs,Tb);
+
+        double[] pFSK2 = pt(noiseFSK2,fs,Tb);
+
+        double[] pFSK = SubtractArrays(pFSK1,pFSK2);
+
+        int[] cFSK = ct(pFSK,0);
+
+        int[] result = changeToBits(cFSK,Tb,fs);
 
         List<Integer> demodListFSK = new ArrayList<>();
-        for (int b : demodBitsFSK) demodListFSK.add(b);
+
+        for (int b : result) demodListFSK.add(b);
 
         List<Integer> decoded = HammingDecode1511(demodListFSK);
-        System.out.println("--------------------FSK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(15,11): " + coded);
-        System.out.println("Po demodulacji : " + demodListFSK);
-        System.out.println("Ostatecznie    : " + decoded);
-        return calculateBER(bits,decoded);
-    }
-
-    private static double askHamming74_beta(int[] bits, double A1, double A2, double fn, double fs, double Tb, double A, double beta, double[] t,double Tc) {
-        List<Integer> coded = HammingCode74(bits);
-
-        double[] analogASK = ASK(coded, A1, A2, fn, fs, Tb);
-        double[] carrierASK = modulate_x(analogASK, fn, fs, A);
-
-        double[] noisyASK = addWhiteNoise2(carrierASK, beta,Tc,t);
-
-        double[] pASK = modulate_p(noisyASK, fs, Tb);
-        double[] cASK = modulate_c(pASK);
-        int[] demodBitsASK = toBits(cASK, Tb, fs);
-
-        List<Integer> demodListASK = new ArrayList<>();
-        for (int b : demodBitsASK) demodListASK.add(b);
-
-        List<Integer> decoded = HammingDecode74(demodListASK);
-        System.out.println("--------------------ASK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(7,4): " + coded);
-        System.out.println("Po demodulacji : " + demodListASK);
-        System.out.println("Ostatecznie    : " + decoded);
-        return calculateBER(bits,decoded);
-    }
-
-    private static double pskHamming74_beta(int[] bits, double fn, double fs, double Tb, double A, double beta, double[] t,double Tc) {
-        List<Integer> coded = HammingCode74(bits);
-
-        double[] analogPSK = PSK(coded,A,fn, fs, Tb);
-        double[] carrierPSK = modulate_x(analogPSK, fn, fs, A);
-
-        double[] noisyPSK = addWhiteNoise2(carrierPSK, beta,Tc,t);
-
-        double[] pPSK = modulate_p(noisyPSK, fs, Tb);
-        double[] cPSK = modulate_c(pPSK);
-        int[] demodBitsPSK = toBits(cPSK, Tb, fs);
-
-        List<Integer> demodListPSK = new ArrayList<>();
-        for (int b : demodBitsPSK) demodListPSK.add(b);
-
-        List<Integer> decoded = HammingDecode74(demodListPSK);
-        System.out.println("--------------------PSK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(7,4): " + coded);
-        System.out.println("Po demodulacji : " + demodListPSK);
-        System.out.println("Ostatecznie    : " + decoded);
-        return calculateBER(bits,decoded);
-    }
-
-    private static double fskHamming74_beta(int[] bits,double fn1,double fn2, double fs, double Tb, double beta, double[] t,double Tc) {
-        List<Integer> coded = HammingCode74(bits);
-
-        double[] analogFSK = FSK(coded,fn1,fn2,fs,Tb);
-        double[] carrierFSK1 = modulate_x1(analogFSK, fn1, fs, Tb);
-        double[] carrierFSK2 = modulate_x2(analogFSK, fn1, fs, Tb);
-
-        double[] noisyFSK1 = addWhiteNoise2(carrierFSK1, beta, Tc, t);
-        double[] noisyFSK2 = addWhiteNoise2(carrierFSK2, beta, Tc, t);
-
-        double[] pFSK1 = modulate_p(noisyFSK1, fs, Tb);
-        double[] pFSK2 = modulate_p(noisyFSK2, fs, Tb);
-        double[] pFSK = addTwoArrays(pFSK1, pFSK2);
-        double[] cFSK = modulate_cfsk(pFSK);
-        int[] demodBitsFSK = toBits(cFSK, Tb, fs);
-
-        List<Integer> demodListFSK = new ArrayList<>();
-        for (int b : demodBitsFSK) demodListFSK.add(b);
-
-        List<Integer> decoded = HammingDecode74(demodListFSK);
-        System.out.println("--------------------FSK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(7,4): " + coded);
-        System.out.println("Po demodulacji : " + demodListFSK);
-        System.out.println("Ostatecznie    : " + decoded);
-        return calculateBER(bits,decoded);
-    }
-
-    private static double askHamming1511_beta(int[] bits, double A1, double A2, double fn, double fs, double Tb, double A, double beta, double[] t,double Tc) {
-        List<Integer> coded = HammingCode1511(bits);
-
-        double[] analogASK = ASK(coded, A1, A2, fn, fs, Tb);
-        double[] carrierASK = modulate_x(analogASK, fn, fs, A);
-
-        double[] noisyASK = addWhiteNoise2(carrierASK, beta, Tc, t);
-
-        double[] pASK = modulate_p(noisyASK, fs, Tb);
-        double[] cASK = modulate_c(pASK);
-        int[] demodBitsASK = toBits(cASK, Tb, fs);
-
-        List<Integer> demodListASK = new ArrayList<>();
-        for (int b : demodBitsASK) demodListASK.add(b);
-
-        List<Integer> decoded = HammingDecode1511(demodListASK);
-        System.out.println("--------------------ASK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(15,11): " + coded);
-        System.out.println("Po demodulacji : " + demodListASK);
-        System.out.println("Ostatecznie    : " + decoded);
-        return calculateBER(bits,decoded);
-    }
-
-    private static double pskHamming1511_beta(int[] bits, double fn, double fs, double Tb, double A, double beta, double[] t,double Tc) {
-        List<Integer> coded = HammingCode1511(bits);
-
-        double[] analogPSK = PSK(coded,A,fn, fs, Tb);
-        double[] carrierPSK = modulate_x(analogPSK, fn, fs, A);
-
-        double[] noisyPSK = addWhiteNoise2(carrierPSK, beta, Tc, t);
-
-        double[] pPSK = modulate_p(noisyPSK, fs, Tb);
-        double[] cPSK = modulate_c(pPSK);
-        int[] demodBitsPSK = toBits(cPSK, Tb, fs);
-
-        List<Integer> demodListPSK = new ArrayList<>();
-        for (int b : demodBitsPSK) demodListPSK.add(b);
-
-        List<Integer> decoded = HammingDecode1511(demodListPSK);
-        System.out.println("--------------------PSK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(15,11): " + coded);
-        System.out.println("Po demodulacji : " + demodListPSK);
-        System.out.println("Ostatecznie    : " + decoded);
-        return calculateBER(bits,decoded);
-    }
-
-    private static double fskHamming1511_beta(int[] bits,double fn1,double fn2, double fs, double Tb, double beta, double[] t, double Tc) {
-        List<Integer> coded = HammingCode1511(bits);
-
-        double[] analogFSK = FSK(coded,fn1,fn2,fs,Tb);
-        double[] carrierFSK1 = modulate_x1(analogFSK, fn1, fs, Tb);
-        double[] carrierFSK2 = modulate_x2(analogFSK, fn1, fs, Tb);
-
-        double[] noisyFSK1 = addWhiteNoise2(carrierFSK1, beta, Tc, t);
-        double[] noisyFSK2 = addWhiteNoise2(carrierFSK2, beta, Tc, t);
-
-        double[] pFSK1 = modulate_p(noisyFSK1, fs, Tb);
-        double[] pFSK2 = modulate_p(noisyFSK2, fs, Tb);
-        double[] pFSK = addTwoArrays(pFSK1, pFSK2);
-        double[] cFSK = modulate_cfsk(pFSK);
-        int[] demodBitsFSK = toBits(cFSK, Tb, fs);
-
-        List<Integer> demodListFSK = new ArrayList<>();
-        for (int b : demodBitsFSK) demodListFSK.add(b);
-
-        List<Integer> decoded = HammingDecode1511(demodListFSK);
-        System.out.println("--------------------FSK--------------------");
-        System.out.println("Wejściowe      : " + Arrays.toString(bits));
-        System.out.println("Po Hamming(15,11): " + coded);
-        System.out.println("Po demodulacji : " + demodListFSK);
-        System.out.println("Ostatecznie    : " + decoded);
+//        System.out.println("--------------------ASK--------------------");
+//        System.out.println("Wejściowe      : " + Arrays.toString(bits));
+//        System.out.println("Po Hamming(15,11): " + coded);
+//        System.out.println("Po demodulacji : " + demodListFSK);
+//        System.out.println("Ostatecznie    : " + decoded);
         return calculateBER(bits,decoded);
     }
 
@@ -478,25 +358,25 @@ public class Main {
         }
     }
 
-    public static int[] HammingCodeInternal1511(int[] m) {
+    public static int[] HammingCodeInternal1511(int[] bits) {
         int[] c = new int[n];
         for(int i=0;i<r;i++){
             int sum = 0;
             for(int j=0;j<k;j++){
-                sum += m[j]*P[j][i];
+                sum += bits[j]*P[j][i];
             }
             c[i] = sum & 1;
         }
-        System.arraycopy(m, 0, c, r, k);
+        System.arraycopy(bits, 0, c, r, k);
         return c;
     }
 
-    public static List<Integer> HammingDecode1511(List<Integer> coded) {
+    public static List<Integer> HammingDecode1511(List<Integer> coded){
         List<Integer> msg = new ArrayList<>();
         for(int i=0; i<coded.size(); i+=n) {
             int[] block = new int[n];
             for(int j=0;j<n;j++) block[j] = coded.get(i+j);
-            int[] corr = HammingDecodeInternal(block);
+            int[] corr = HammingDecodeInternal1511(block);
             for(int j=0;j<k;j++){
                 msg.add(corr[r + j]);
             }
@@ -504,19 +384,19 @@ public class Main {
         return msg;
     }
 
-    public static int[] HammingDecodeInternal1511(int[] c) {
+    public static int[] HammingDecodeInternal1511(int[] coded){
         int syndrome = 0;
         for(int i=0;i<r;i++){
-            int sum = c[i];
+            int sum = coded[i];
             for(int j=0;j<k;j++){
-                sum += c[r+j]*P[j][i];
+                sum += coded[r+j]*P[j][i];
             }
             if((sum & 1) == 1) syndrome |= 1<<i;
         }
         if(syndrome>0 && syndrome<=n) {
-            c[syndrome-1] ^= 1;
+            coded[syndrome-1] ^= 1;
         }
-        return c;
+        return coded;
     }
 
     static List<Integer> HammingCode74(int[] bits) {
@@ -601,149 +481,147 @@ public class Main {
         return corrected;
     }
 
-    static double[] ASK(List<Integer> bits, double A1, double A2, double fn, double fs, double Tb) {
-        int samplesPerBit = (int)(Tb * fs);
-        double[] result = new double[bits.size() * samplesPerBit];
+    public static double[] za(double A1, double A2, List<Integer> bits, double fn, double fs, double Tb){
+        int bitTime = (int)(fs * Tb);
+        double[] signal = new double[bits.size() * bitTime];
 
-        for (int i = 0; i < bits.size(); i++) {
-            double amplitude = bits.get(i) == 1 ? A2 : A1;
-            for (int j = 0; j < samplesPerBit; j++) {
-                double t = (i * samplesPerBit + j) / fs;
-                result[i * samplesPerBit + j] = amplitude * Math.cos(2 * Math.PI * fn * t);
+        for(int n = 0; n < signal.length; n++) {
+            double t = (double) n / fs;
+            double f = 0;
+            if(bits.get(n / bitTime) == 0){
+                f = A1 * Math.sin(2 * Math.PI * t * fn);
             }
-        }
-
-        return result;
-    }
-
-    public static double[] PSK(List<Integer> bits, double A, double fn, double fs, double Tb) {
-        int samplesPerBit = (int)(Tb * fs);
-        double[] result = new double[bits.size() * samplesPerBit];
-        for (int i = 0; i < bits.size(); i++) {
-            double phase = bits.get(i) == 0 ? 0 : Math.PI;
-            for (int j = 0; j < samplesPerBit; j++) {
-                double t = (i * samplesPerBit + j) / fs;
-                result[i * samplesPerBit + j] = A * Math.sin(2 * Math.PI * fn * t + phase);
+            else {
+                f = A2 * Math.sin(2 * Math.PI * t * fn);
             }
+            signal[n] = f;
         }
-
-        return result;
+        return signal;
     }
 
-    static double[] FSK(List<Integer> bits, double fn1, double fn2, double fs, double Tb) {
-        int samplesPerBit = (int)(Tb * fs);
-        double[] result = new double[bits.size() * samplesPerBit];
+    public static double[] zf(List<Integer> bits, double fn1, double fn2, double fs, double Tb){
+        int bitTime = (int)(fs * Tb);
+        double[] signal = new double[bits.size() * bitTime];
 
-        for (int i = 0; i < bits.size(); i++) {
-            double fn = bits.get(i) == 0 ? fn1 : fn2;
-            for (int j = 0; j < samplesPerBit; j++) {
-                double t = (i * samplesPerBit + j) / fs;
-                result[i * samplesPerBit + j] = Math.sin(2 * Math.PI * fn * t);
-            }
-        }
-
-        return result;
-    }
-
-    static double[] modulate_x1(double[] signal, double fn1, double fs, double Tb) {
-        double[] result = new double[signal.length];
-        for (int i = 0; i < signal.length; i++) {
-            double t = i / fs;
-            result[i] = signal[i] * Math.sin(2 * Math.PI * fn1 * t);
-        }
-        return result;
-    }
-
-    static double[] modulate_x2(double[] signal, double fn2, double fs, double Tb) {
-        double[] result = new double[signal.length];
-        for (int i = 0; i < signal.length; i++) {
-            double t = i / fs;
-            result[i] = signal[i] * Math.sin(2 * Math.PI * fn2 * t);
-        }
-        return result;
-    }
-
-    static double[] modulate_x(double[] signal, double fn, double fs, double A) {
-        double[] result = new double[signal.length];
-        for (int i = 0; i < signal.length; i++) {
-            double t = i / fs;
-            result[i] = signal[i] * A * Math.cos(2 * Math.PI * fn * t);
-        }
-        return result;
-    }
-
-    static double[] modulate_p(double[] signal, double fs, double Tb) {
-        int Tbp = (int)(Tb * fs);
-        int B = signal.length / Tbp;
-        double[] p = new double[signal.length];
-        int i = 0;
-        for (int b = 0; b < B; b++) {
+        for(int n = 0; n < signal.length; n++) {
+            double t = (double) n / fs;
             double s = 0;
-            for (int n = 0; n < Tbp; n++) {
-                s = s + signal[b * Tbp + n];
-                p[i++] = s;
+            if(bits.get(n / bitTime) == 0){
+                s = Math.sin(2 * Math.PI * t * fn1);
             }
+            else {
+                s =Math.sin(2 * Math.PI * t * fn2);
+            }
+            signal[n] = s;
         }
-        return p;
+        return signal;
     }
 
-    static double[] modulate_c(double[] signal) {
-        double[] c = new double[signal.length];
-        double sum = 0;
-        for (double v : signal) {
-            sum += v;
-        }
-        double h = sum / signal.length;
+    public static double[] zp(List<Integer> bits, double fn, double fs, double Tb){
+        int bitTime = (int)(fs * Tb);
+        double[] signal = new double[bits.size() * bitTime];
 
-        for (int n = 0; n < signal.length; n++) {
-            if (signal[n] > h) {
-                c[n] = 1;
+        for(int n = 0; n < signal.length; n++) {
+            double t = (double) n / fs;
+            double f = 0;
+            if(bits.get(n / bitTime) == 0){
+                f = Math.sin(2 * Math.PI * t * fn);
+            }
+            else {
+                f = Math.sin(2 * Math.PI * t * fn + Math.PI);
+            }
+            signal[n] = f;
+        }
+        return signal;
+    }
+
+    public static double[] xt(double[] signal, double fn, double fs, double A, double fi){
+        double[] res = new double[signal.length];
+        for(int n = 0; n < signal.length; n++) {
+            double t = (double) n / fs;
+            res[n] = signal[n] * A * Math.sin(2 * Math.PI * t * fn + fi);
+        }
+
+        return res;
+    }
+
+    public static double[] xt1(double[] signal, double fn, double fs){
+        double[] res = new double[signal.length];
+        for(int n = 0; n < signal.length; n++) {
+            double t = (double) n / fs;
+            res[n] = signal[n] * Math.sin(2 * Math.PI * t * fn);
+        }
+
+        return res;
+    }
+
+    public static double[] pt(double[] xt, double fs, double Tb){
+        int bitTime = (int)(fs * Tb);
+        int numBits = xt.length / bitTime;
+        LinkedList<Double> res = new LinkedList<>();
+        for(int i = 0; i < numBits; i++) {
+            double sum = 0;
+            for(int y = i * bitTime; y < (i + 1) * bitTime; y++ ) {
+                sum += xt[y];
+                res.add(sum);
+            }
+        }
+
+        double[] pt = new double[res.size()];
+        for(int i = 0; i < pt.length; i++) {
+            pt[i] = res.get(i);
+        }
+        return pt;
+    };
+
+    public static int[] ct(double[] pt, double h) {
+        int[] ct = new int[pt.length];
+        for (int i = 0; i < pt.length; i++) {
+            if (pt[i] > h) {
+                ct[i] = 1;
             } else {
-                c[n] = 0;
+                ct[i] = 0;
             }
         }
-        return c;
+        return ct;
     }
 
-    static double[] addTwoArrays(double[] a, double[] b) {
-        double[] result = new double[a.length];
-        for (int i = 0; i < a.length; i++) {
-            result[i] = a[i] - b[i];
-        }
-        return result;
-    }
-
-    static double[] modulate_cfsk(double[] signal) {
-        int B = signal.length;
-        double[] result = new double[signal.length];
-        for (int i = 0; i < B; i++) {
-            if(signal[i] > 0.000000001 ){
-                result[i] = 1;
-            }else{
-                result[i] = 0;
+    public static int[] changeToBits(int[] ct, double Tb, double fs){
+        int bitTime = (int)(fs * Tb);
+        int numBits = ct.length / bitTime;
+        LinkedList<Integer> res = new LinkedList<>();
+        for(int i = 0; i < numBits; i++) {
+            int w = 0;
+            int n = 0;
+            for(int y = i * bitTime; y < (i + 1) * bitTime; y++ ) {
+                if(ct[y] != 0){
+                    w++;
+                }
+                else{
+                    n++;
+                }
+            }
+            if(w > n){
+                res.add(1);
+            }
+            else{
+                res.add(0);
             }
         }
-        return result;
-    }
 
-    public static int[] toBits(double[] signal, double Tb, double fs) {
-        int Tbp = (int)(Tb * fs);
-        int B = signal.length / Tbp;
-        int[] bits = new int[B];
-
-        for (int b = 0; b < B; b++) {
-            double m = 0;
-            for (int n = 0; n < Tbp; n++) {
-                m += signal[b * Tbp + n];
-            }
-            double avg = m / Tbp;
-            if (avg >= 0.5) {
-                bits[b] = 1;
-            } else {
-                bits[b] = 0;
-            }
+        int[] bits = new int[res.size()];
+        for(int i = 0; i < bits.length; i++) {
+            bits[i] = res.get(i);
         }
         return bits;
+    };
+
+    public static double[] SubtractArrays(double[] pt1, double[] pt2){
+        for(int i = 0; i < pt1.length; i++){
+            pt1[i] = pt2[i] - pt1[i];
+        }
+
+        return pt1;
     }
 
     static double[] addWhiteNoise(double[] x, double alpha) {
@@ -752,16 +630,6 @@ public class Main {
         for (int i = 0; i < x.length; i++) {
             double g = 2.0 * rng.nextDouble() - 1.0;
             y[i] = x[i] + alpha * g;
-        }
-        return y;
-    }
-
-    static double[] addWhiteNoise2(double[] x,double beta,double Tc, double[] t){
-        double[] y = new double[x.length];
-        for (int i = 0; i < x.length; i++) {
-            for (int j = 0; j < t.length; j++) {
-                y[i] = x[i] * Math.exp(-beta * t[j]) * Math.max(0,1-(t[j]/Tc*0.95));
-            }
         }
         return y;
     }
@@ -777,54 +645,5 @@ public class Main {
         return (errors / (double) N) * 100.0;
     }
 
-    private static double[] toArray(List<Double> list) {
-        double[] out = new double[list.size()];
-        for (int i = 0; i < list.size(); i++) {
-            out[i] = list.get(i);
-        }
-        return out;
-    }
-
-    static double[] generateTime(int bitsLength, double Tb, double fs) {
-        int totalSamples = (int)(bitsLength * Tb * fs);
-        double[] t = new double[totalSamples];
-        for (int i = 0; i < t.length; i++) {
-            t[i] = i / fs;
-        }
-        return t;
-    }
-
-    private static void showSingleSeriesChart(String windowTitle,
-                                              double[] params,
-                                              double[][] bers,
-                                              String[] seriesTitles) {
-
-        JPanel panel = new JPanel(new GridLayout(2, 3));
-
-        for (int i = 0; i < 6; i++) {
-            XYSeries series = new XYSeries(seriesTitles[i]);
-            for (int j = 0; j < params.length; j++) {
-                series.add(params[j], bers[i][j]);
-            }
-            XYSeriesCollection dataset = new XYSeriesCollection(series);
-
-            JFreeChart chart = ChartFactory.createXYLineChart(
-                    seriesTitles[i],
-                    "param",
-                    "BER (%)",
-                    dataset
-            );
-
-            ChartPanel chartPanel = new ChartPanel(chart);
-            chartPanel.setPreferredSize(new Dimension(300, 250));
-            panel.add(chartPanel);
-        }
-
-        JFrame frame = new JFrame(windowTitle);
-        frame.setContentPane(panel);
-        frame.pack();
-        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-        frame.setVisible(true);
-    }
 
 }
