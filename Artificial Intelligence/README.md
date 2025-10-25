@@ -1,0 +1,1 @@
+University course "Artificial Intelligence".
