@@ -1,0 +1,12 @@
+numpy==1.26.4
+scipy 
+matplotlib
+Pandas
+python-docx 
+soundfile
+sounddevice 
+Pillow
+pylibjpeg-libjpeg==2.1.0
+opencv-contrib-python==4.10.0.82
+scikit-learn
+scikit-image
