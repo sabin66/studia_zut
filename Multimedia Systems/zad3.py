@@ -7,18 +7,11 @@ from docx.shared import Inches
 from io import BytesIO
 
 def analyze_and_plot(filename, fsize, axs):
-    """
-    Funkcja analizująca plik wav, rysująca wykresy na przekazanych osiach (axs)
-    i zwracająca częstotliwość o najwyższej amplitudzie w widmie.
-    """
-    # Wczytanie danych z pliku
     data, fs = sf.read(filename, dtype=np.int32)
     
-    # Obsługa potencjalnych plików stereo (pobranie jednego kanału)
     if len(data.shape) > 1:
         data = data[:, 0]
 
-    # --- 1. Wykres w dziedzinie czasu ---
     time = np.arange(data.shape[0]) / fs
     axs[0].plot(time, data)
     axs[0].set_title('Sygnał w dziedzinie czasu')
@@ -26,14 +19,10 @@ def analyze_and_plot(filename, fsize, axs):
     axs[0].set_ylabel('Amplituda')
     axs[0].grid(True)
 
-    # --- 2. Wykres widma amplitudowego (FFT) ---
     yf = scipy.fftpack.fft(data, fsize)
     
-    # Oś częstotliwości (do fs/2)
     freqs = np.arange(0, fs / 2, fs / fsize)
     
-    # Obliczenie amplitudy w dB
-    # Dodajemy 1e-10 do abs(yf), aby uniknąć błędu logarytmu z zera (log10(0))
     amplitudes = np.abs(yf[:fsize//2])
     amplitudes_db = 20 * np.log10(amplitudes + 1e-10)
     
@@ -43,9 +32,8 @@ def analyze_and_plot(filename, fsize, axs):
     axs[1].set_ylabel('Amplituda [dB]')
     axs[1].grid(True)
 
-    # --- 3. Wyszukiwanie maksymalnej wartości w widmie ---
-    max_idx = np.argmax(amplitudes_db) # Zwraca indeks elementu o najwyższej wartości
-    max_freq = freqs[max_idx]          # Częstotliwość dla tego indeksu
+    max_idx = np.argmax(amplitudes_db)
+    max_freq = freqs[max_idx]
     max_amp = amplitudes_db[max_idx]   # Wartość amplitudy w dB
 
     return max_freq, max_amp
