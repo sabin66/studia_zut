@@ -21,12 +21,12 @@ def checker(name):
     print(np.min(img1),np.max(img1))
 
 def imgToUInt8(img):
-    if not isinstance(img,np.integer):
-        img = np.astype(img*255,'uint8')
+    if not np.issubdtype(img.dtype,np.unsignedinteger):
+        img = (img*255).astype('uint8')
     return img
 
 def imgToFloat(img):
-    if not isinstance(img,np.float32):
+    if not np.issubdtype(img.dtype,np.floating):
         img = img/255.0
     return img
 
@@ -37,8 +37,39 @@ for image in images:
 
 
 # cz.2
-img = plt.imread('A1.png')
+img = plt.imread('B01.png')
 plt.imshow(img)
 R=img[:,:,0]
-plt.imshow(R)
+G=img[:,:,1]
+B=img[:,:,2]
+Y2=0.2126 * R + 0.7152 * G + 0.0722 * B
+
+if np.issubdtype(img.dtype,np.unsignedinteger): 
+    plt.imshow(R,cmap=plt.cm.gray,vmin=0, vmax=255) # jesli uint8 to 0, 255, jesli float32 to 0.0, 1.0
+else:
+    plt.imshow(R,cmap=plt.cm.gray,vmin=0.0, vmax=1.0)
+plt.show()
+
+plt.figure()
+plt.imshow(Y2, cmap=plt.cm.gray, vmin=0.0, vmax=1.0)
+plt.title("Obraz w skali szarości (metoda z wagami)")
+plt.show()
+
+img_cv2 = cv2.imread('B01.png')
+plt.figure()
+plt.imshow(img_cv2)
+plt.title("OpenCV (v1)")
+plt.show()
+
+img_RGB = cv2.cvtColor(img_cv2, cv2.COLOR_BGR2RGB)
+img_BGR = cv2.cvtColor(img_RGB, cv2.COLOR_RGB2BGR)
+
+plt.figure()
+plt.imshow(img_RGB)
+plt.title("OpenCV (RGB)")
+plt.show()
+
+plt.figure()
+plt.imshow(img_BGR)
+plt.title("OpenCV (BGR)")
 plt.show()
