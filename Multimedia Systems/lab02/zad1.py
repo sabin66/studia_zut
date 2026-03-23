@@ -13,9 +13,9 @@ from io import BytesIO
 ##########################################
 
 Test = True
-Scaling_test = True # run only artificial test for scaling methods
+Scaling_test = False # run only artificial test for scaling methods
 
-ScalesUp = [5] # list of parameters values
+ScalesUp = [50] # list of parameters values
 ScalesDown =[0.5] # list of parameters values
 
 OutputRaportFile = ".docx" 
@@ -27,10 +27,10 @@ OutputRaportFile = ".docx"
 ImgDir = r'.' # Address of folder with files (do nor delete `r``)
 
 
-SmallImages=[] # list of file names
+SmallImages=["IMG_SMALL/SMALL_0002.png"] # list of file names
 BigImages=[ #list of dictionaries
     {
-        "Filename":"", # File name
+        "Filename":"IMG_BIG/BIG_0002.jpg", # File name
         "ROIs":[[0,0,250,250]] # list of Region of interests for this image more then 1 per file
     }
 ]
@@ -54,12 +54,12 @@ def NearestNeigbourScaling(In_img,scale):
     else:
         Out_img = np.zeros((nh,nw,In_img.shape[2]))
     for ix,x in enumerate(X):
-        print(ix,x)
+        #print(ix,x)
         for iy,y in enumerate(Y):
-            print(iy,y)
+            #print(iy,y)
             xp = np.round(x).astype(int)
             yp = np.round(y).astype(int)
-            Out_img[iy,ix] = In_img[yp,xp]
+            Out_img[ix,iy] = In_img[xp,yp]
     return Out_img
 
 def BilinearScaling(In_img,scale):
@@ -74,35 +74,155 @@ def BilinearScaling(In_img,scale):
     else:
         Out_img = np.zeros((nh,nw,In_img.shape[2]))
     for ix,x in enumerate(X):
-        print(ix,x)
+        #print(ix,x)
         for iy,y in enumerate(Y):
-            print(iy,y)
+            #print(iy,y)
             x1 = np.floor(x).astype(int)
             x2 = np.ceil(x).astype(int)
             xd = x-x1
             y1 = np.floor(y).astype(int)
             y2 = np.ceil(y).astype(int)
             yd = y-y1
-            print("xd,yd:",xd,yd)
-            Out_img[iy,ix] = In_img[y1,x1]*(1-xd)*(1-yd) + In_img[y2,x1]*(1-xd)*yd + In_img[y1,x2]*xd*(1-yd) + In_img[y2,x2]*xd*yd
+            #print("xd,yd:",xd,yd)
+            Out_img[ix,iy] = In_img[x1,y1]*(1-xd)*(1-yd) + In_img[x2,y1]*(1-yd)*xd + In_img[x1,y2]*yd*(1-xd) + In_img[x2,y2]*xd*yd
     return Out_img
 
 # Shrinking methods
  
 def MeanResizing(In_img,scale):
-    Out_img=In_img
-    ####
-    return Out_img
+    h = In_img.shape[0]
+    w = In_img.shape[1]
+    nh = np.ceil(h * scale).astype(int)
+    nw = np.ceil(w * scale).astype(int)
+    X = np.linspace(0,h-1,nh)
+    Y = np.linspace(0,w-1,nw)
+    if (len(In_img.shape) < 3):
+        Out_img = np.zeros((nh,nw))
+    else:
+        Out_img = np.zeros((nh,nw,In_img.shape[2]))
+    for ix,x in enumerate(X):
+        if ix > 0:
+            x1 = -(x-X[ix-1])/2
+        else:
+            x1 = 0
+        if ix < len(X)-1:
+            x2 = (X[ix+1] - x)/2 + 1
+        else:
+            x2 = 0
+        ix_arr=np.round(x +np.arange(x1,x2)).astype(int)
+        ix_arr=ix_arr.clip(0,h-1)
+
+        for iy,y in enumerate(Y):
+            if iy > 0:
+                y1 = -(y-Y[iy-1])/2
+            else:
+                y1 = 0
+            if iy < len(Y)-1:
+                y2 = (Y[iy+1] - y)/2 + 1
+            else:
+                y2 = 0
+            iy_arr=np.round(y+np.arange(y1,y2)).astype(int)
+            iy_arr=iy_arr.clip(0,w-1)
+
+            fragment = In_img[ix_arr[0]:ix_arr[-1]+1, iy_arr[0]:iy_arr[-1]+1]
+
+            if fragment.size > 0:
+                if len(In_img.shape) < 3:
+                    Out_img[ix, iy] = np.mean(fragment)
+                else:
+                    Out_img[ix,iy] = np.mean(fragment,axis=(0,1))
+
+    return Out_img.astype(In_img.dtype)
 
 def WeightedMeanResizing(In_img,scale):
-    Out_img=In_img
-    ####
-    return Out_img
+    h = In_img.shape[0]
+    w = In_img.shape[1]
+    nh = np.ceil(h * scale).astype(int)
+    nw = np.ceil(w * scale).astype(int)
+    X = np.linspace(0,h-1,nh)
+    Y = np.linspace(0,w-1,nw)
+    if (len(In_img.shape) < 3):
+        Out_img = np.zeros((nh,nw))
+    else:
+        Out_img = np.zeros((nh,nw,In_img.shape[2]))
+    for ix,x in enumerate(X):
+        if ix > 0:
+            x1 = -(x-X[ix-1])/2
+        else:
+            x1 = 0
+        if ix < len(X)-1:
+            x2 = (X[ix+1] - x)/2 + 1
+        else:
+            x2 = 0
+        ix_arr=np.round(x +np.arange(x1,x2)).astype(int)
+        ix_arr=ix_arr.clip(0,h-1)
+
+        for iy,y in enumerate(Y):
+            if iy > 0:
+                y1 = -(y-Y[iy-1])/2
+            else:
+                y1 = 0
+            if iy < len(Y)-1:
+                y2 = (Y[iy+1] - y)/2 + 1
+            else:
+                y2 = 0
+            iy_arr=np.round(y+np.arange(y1,y2)).astype(int)
+            iy_arr=iy_arr.clip(0,w-1)
+
+            fragment = In_img[ix_arr[0]:ix_arr[-1]+1, iy_arr[0]:iy_arr[-1]+1]
+
+            if fragment.size > 0:
+                weights = np.random.rand(*fragment.shape)
+                weighted_sum = np.sum(np.multiply(fragment,weights))
+                total_weight = np.sum(weights)
+                if total_weight > 0:
+                    Out_img[ix,iy] = weighted_sum / total_weight
+                else:
+                    Out_img[ix,iy] = 0
+
+    return Out_img.astype(In_img.dtype)
 
 def MedianResizing(In_img,scale):
-    Out_img=In_img
-    ####
-    return Out_img
+    h = In_img.shape[0]
+    w = In_img.shape[1]
+    nh = np.ceil(h * scale).astype(int)
+    nw = np.ceil(w * scale).astype(int)
+    X = np.linspace(0,h-1,nh)
+    Y = np.linspace(0,w-1,nw)
+    if (len(In_img.shape) < 3):
+        Out_img = np.zeros((nh,nw))
+    else:
+        Out_img = np.zeros((nh,nw,In_img.shape[2]))
+    for ix,x in enumerate(X):
+        if ix > 0:
+            x1 = -(x-X[ix-1])/2
+        else:
+            x1 = 0
+        if ix < len(X)-1:
+            x2 = (X[ix+1] - x)/2 + 1
+        else:
+            x2 = 0
+        ix_arr=np.round(x +np.arange(x1,x2)).astype(int)
+        ix_arr=ix_arr.clip(0,h-1)
+
+        for iy,y in enumerate(Y):
+            if iy > 0:
+                y1 = -(y-Y[iy-1])/2
+            else:
+                y1 = 0
+            if iy < len(Y)-1:
+                y2 = (Y[iy+1] - y)/2 + 1
+            else:
+                y2 = 0
+            iy_arr=np.round(y+np.arange(y1,y2)).astype(int)
+            iy_arr=iy_arr.clip(0,w-1)
+
+            fragment = In_img[ix_arr[0]:ix_arr[-1]+1, iy_arr[0]:iy_arr[-1]+1]
+
+            if fragment.size > 0:
+                Out_img[ix,iy] = np.median(fragment)
+
+    return Out_img.astype(In_img.dtype)
 
 def EdgeDetection(img):
     ## configure your edge detection algorithm
