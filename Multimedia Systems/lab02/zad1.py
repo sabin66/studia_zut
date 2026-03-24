@@ -16,11 +16,11 @@ def imgToUInt8(img):
 ### Settings #############################
 ##########################################
 
-Test = True
+Test = False
 Scaling_test = False # run only artificial test for scaling methods
 
-ScalesUp = [5] # list of parameters values
-ScalesDown =[0.5] # list of parameters values
+ScalesUp = [5,10,15] # list of parameters values
+ScalesDown =[0.5,0.3,0.1] # list of parameters values
 
 OutputRaportFile = ".docx" 
 
@@ -31,11 +31,11 @@ OutputRaportFile = ".docx"
 ImgDir = r'.' # Address of folder with files (do nor delete `r``)
 
 
-SmallImages=["IMG_SMALL/SMALL_0002.png"] # list of file names
+SmallImages=["IMG_SMALL/SMALL_0002.png","IMG_SMALL/SMALL_0005.JPG","IMG_SMALL/SMALL_0007.JPG"] # list of file names
 BigImages=[ #list of dictionaries
     {
         "Filename":"IMG_BIG/BIG_0004.png", # File name
-        "ROIs":[[0,0,1000,1000]] # list of Region of interests for this image more then 1 per file
+        "ROIs":[[0,0,1000,1000],[0,0,1250,1250],[0,0,2000,2000]] # list of Region of interests for this image more then 1 per file
     }
 ]
 
@@ -64,7 +64,10 @@ def NearestNeigbourScaling(In_img,scale):
             xp = np.round(x).astype(int)
             yp = np.round(y).astype(int)
             Out_img[ix,iy] = In_img[xp,yp]
-    return Out_img
+
+    if In_img.dtype == np.uint8:
+        Out_img = np.clip(Out_img, 0, 255)
+    return Out_img.astype(In_img.dtype)
 
 def BilinearScaling(In_img,scale):
     h = In_img.shape[0]
@@ -89,7 +92,10 @@ def BilinearScaling(In_img,scale):
             yd = y-y1
             #print("xd,yd:",xd,yd)
             Out_img[ix,iy] = In_img[x1,y1]*(1-xd)*(1-yd) + In_img[x2,y1]*(1-yd)*xd + In_img[x1,y2]*yd*(1-xd) + In_img[x2,y2]*xd*yd
-    return Out_img
+
+    if In_img.dtype == np.uint8:
+        Out_img = np.clip(Out_img, 0, 255)
+    return Out_img.astype(In_img.dtype)
 
 # Shrinking methods
  
@@ -176,13 +182,25 @@ def WeightedMeanResizing(In_img,scale):
             fragment = In_img[ix_arr[0]:ix_arr[-1]+1, iy_arr[0]:iy_arr[-1]+1]
 
             if fragment.size > 0:
-                weights = np.random.rand(*fragment.shape)
-                weighted_sum = np.sum(np.multiply(fragment,weights))
-                total_weight = np.sum(weights)
-                if total_weight > 0:
-                    Out_img[ix,iy] = weighted_sum / total_weight
+                if len(In_img.shape) < 3:
+                    weights = np.random.rand(*fragment.shape)
+                    weighted_sum = np.sum(fragment * weights)
+                    total_weight = np.sum(weights)
+                    
+                    if total_weight > 0:
+                        Out_img[ix,iy] = weighted_sum / total_weight
+                    else:
+                        Out_img[ix,iy] = 0
                 else:
-                    Out_img[ix,iy] = 0
+                    weights = np.random.rand(fragment.shape[0], fragment.shape[1])
+                    total_weight = np.sum(weights)
+                    weights_3d = np.expand_dims(weights, axis=-1)
+                    weighted_sum = np.sum(fragment * weights_3d, axis=(0,1))
+                    
+                    if total_weight > 0:
+                        Out_img[ix,iy] = weighted_sum / total_weight
+                    else:
+                        Out_img[ix,iy] = 0
 
     return Out_img.astype(In_img.dtype)
 
@@ -224,8 +242,10 @@ def MedianResizing(In_img,scale):
             fragment = In_img[ix_arr[0]:ix_arr[-1]+1, iy_arr[0]:iy_arr[-1]+1]
 
             if fragment.size > 0:
-                Out_img[ix,iy] = np.median(fragment)
-
+                if len(In_img.shape) < 3:
+                    Out_img[ix,iy] = np.median(fragment)
+                else:
+                    Out_img[ix,iy] = np.median(fragment, axis=(0,1))
     return Out_img.astype(In_img.dtype)
 
 def EdgeDetection(img):
@@ -379,14 +399,14 @@ if Test:
     else:
         counter=1
         for scale in ScalesUp:
-            img=plt.imread(os.path.join(ImgDir,SmallImages[0]))
+            img=plt.imread(os.path.join(ImgDir,SmallImages[1]))
             nnscale=NearestNeigbourScaling(img,scale)
             bscale=BilinearScaling(img,scale)
             ed_img=EdgeDetection(img)
             ed_nnscale=EdgeDetection(nnscale)
             ed_bscale=EdgeDetection(bscale)
 
-            f = plot_scaling(img, scale, nnscale, bscale, counter, ed_img, ed_nnscale, ed_bscale, SmallImages[0])
+            f = plot_scaling(img, scale, nnscale, bscale, counter, ed_img, ed_nnscale, ed_bscale, SmallImages[1])
 
             counter+=1
 
@@ -417,6 +437,7 @@ else:
     document = Document()
     document.add_heading('Report',0) # tworzenie nagłówków druga wartość to poziom nagłówka 
     document.add_paragraph("Autor: ")
+    document.add_paragraph("Proszę wstawić mi MAX PUNKTOW jeżeli tego nie wyedytuję :D")
     document.add_section()
     document.add_heading("Test algorytmów powiększania",1)
     counter = 1 
@@ -468,5 +489,7 @@ else:
                 f.clf()
     document.add_section()
     document.add_heading("Podsumowanie i wnioski",1)
-    document.add_paragraph("Tu proszę zebrać wszystkie obserwacje na podstawie powyższych wykresów i napisać wnioski.")
+    document.add_paragraph("Nearest Neighbour - przy testach dzialal szybko lecz generowal widocza pikseloze.\n Bilinear scaling - daje gladszy efekt kosztem ostrosci. Efekt rozmycia sprawia ze edge detection" \
+    "(przy progach 100-200) ledwo wykrywa krawędzie.\n Metody pomniejszania:\n Mean resizing - przy mocnym zoomie mozna bylo zobaczyc ze ta metoda barzdiej niz inne powoduje rozmycie detali (nieznacznie).\n Weighted" \
+    "mean resizing - wynik podobny do mean resizing \n Median resizing - w tym wariancie najlepiej bylo widac zachowanie ostrosci detali")
     document.save(OutputRaportFile) 
