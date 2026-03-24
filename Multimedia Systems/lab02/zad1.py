@@ -15,7 +15,7 @@ from io import BytesIO
 Test = True
 Scaling_test = False # run only artificial test for scaling methods
 
-ScalesUp = [50] # list of parameters values
+ScalesUp = [5] # list of parameters values
 ScalesDown =[0.5] # list of parameters values
 
 OutputRaportFile = ".docx" 
@@ -233,11 +233,11 @@ def EdgeDetection(img):
 ### Main Program  ########################
 ##########################################
 
-def plot_resize(img, scale, nnscale, bscale, ed_img, ed_nnscale, ed_bscale, mr_img, wmr_img, mdr_img, oROI, filename,counter,figsize=(5,5)):
+def plot_resize(img, scale, nnscale, bscale, ed_img, ed_nnscale, ed_bscale, mr_img, wmr_img, mdr_img, ed_mr_img, ed_wmr_img,ed_mdr_img, oROI, filename,counter,figsize=(5,5)):
     ROI=(np.array(oROI)*scale).astype(int)
     f,axs=plt.subplots(4,3,num=counter,figsize=figsize) 
     f.suptitle(f"{filename} ROI: {ROI}")
-    axs[0,0].imshow(img[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
+    axs[0,0].imshow(img[oROI[1]:oROI[1]+oROI[3],oROI[0]:oROI[0]+oROI[2],:])
     axs[0,0].set_title("Original")
     axs[0,0].set_axis_off()
 
@@ -245,21 +245,37 @@ def plot_resize(img, scale, nnscale, bscale, ed_img, ed_nnscale, ed_bscale, mr_i
     axs[0,1].set_title(f"NN scale {scale}")
     axs[0,1].set_axis_off()
 
+
     axs[0,2].imshow(bscale[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
     axs[0,2].set_title(f"Blinear scale {scale}")
     axs[0,2].set_axis_off()
 
-    axs[1,0].imshow(ed_img[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
-    axs[1,0].set_title("Edges Original")
-    axs[1,0].set_axis_off()
+    if len(ed_img.shape)==3:
+        axs[1,0].imshow(ed_img[oROI[1]:oROI[1]+oROI[3],oROI[0]:oROI[0]+oROI[2],:])
+        axs[1,0].set_title("Edges Original")
+        axs[1,0].set_axis_off()
+    else:
+        axs[1,0].imshow(ed_img[oROI[1]:oROI[1]+oROI[3],oROI[0]:oROI[0]+oROI[2]])
+        axs[1,0].set_title("Edges Original")
+        axs[1,0].set_axis_off()
 
-    axs[1,1].imshow(ed_nnscale[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
-    axs[1,1].set_title("Edges NN")
-    axs[1,1].set_axis_off()
-
-    axs[1,2].imshow(ed_bscale[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
-    axs[1,2].set_title("Edges Bilinear")
-    axs[1,2].set_axis_off()
+    if len(ed_nnscale.shape)==3:
+        axs[1,1].imshow(ed_nnscale[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
+        axs[1,1].set_title("Edges NN")
+        axs[1,1].set_axis_off()
+    else:
+        axs[1,1].imshow(ed_nnscale[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2]])
+        axs[1,1].set_title("Edges NN")
+        axs[1,1].set_axis_off()
+        
+    if len(ed_bscale.shape)==3:
+        axs[1,2].imshow(ed_bscale[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
+        axs[1,2].set_title("Edges Bilinear")
+        axs[1,2].set_axis_off()
+    else:
+        axs[1,2].imshow(ed_bscale[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2]])
+        axs[1,2].set_title("Edges Bilinear")
+        axs[1,2].set_axis_off()
 
     axs[2,0].imshow(mr_img[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
     axs[2,0].set_title(f"Mean Resizing scale {scale}")
@@ -272,18 +288,34 @@ def plot_resize(img, scale, nnscale, bscale, ed_img, ed_nnscale, ed_bscale, mr_i
     axs[2,2].imshow(mdr_img[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
     axs[2,2].set_title(f"Median Resizing scale {scale}")
     axs[2,2].set_axis_off()
-
-    axs[3,0].imshow(ed_img[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
-    axs[3,0].set_title("Edges Mean Resizing")
-    axs[3,0].set_axis_off()
-
-    axs[3,1].imshow(ed_nnscale[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
-    axs[3,1].set_title("Edges Weighted Mean Resizing")
-    axs[3,1].set_axis_off()
-
-    axs[3,2].imshow(ed_bscale[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
-    axs[3,2].set_title("Edges Median Resizing")
-    axs[3,2].set_axis_off()
+        
+    if len(ed_mr_img.shape)==3:
+        axs[3,0].imshow(ed_mr_img[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
+        axs[3,0].set_title("Edges Mean Resizing")
+        axs[3,0].set_axis_off()
+    else:
+        axs[3,0].imshow(ed_mr_img[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2]])
+        axs[3,0].set_title("Edges Mean Resizing")
+        axs[3,0].set_axis_off()
+        
+    if len(ed_wmr_img.shape)==3:
+        axs[3,1].imshow(ed_wmr_img[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
+        axs[3,1].set_title("Edges Weighted Mean Resizing")
+        axs[3,1].set_axis_off()
+    else:
+        axs[3,1].imshow(ed_nnscale[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2]])
+        axs[3,1].set_title("Edges Weighted Mean Resizing")
+        axs[3,1].set_axis_off()
+        
+    if len(ed_mdr_img.shape)==3:
+        axs[3,2].imshow(ed_mdr_img[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2],:])
+        axs[3,2].set_title("Edges Median Resizing")
+        axs[3,2].set_axis_off()
+    else:
+        axs[3,2].imshow(ed_mdr_img[ROI[1]:ROI[1]+ROI[3],ROI[0]:ROI[0]+ROI[2]])
+        axs[3,2].set_title("Edges Median Resizing")
+        axs[3,2].set_axis_off()
+        
     return f
 
 def plot_scaling(img, scale, nnscale, bscale, counter, ed_img, ed_nnscale, ed_bscale, file,figsize=(5,5)):
@@ -359,7 +391,7 @@ if Test:
             ed_wmr_img=EdgeDetection(wmr_img)
             ed_mdr_img=EdgeDetection(mdr_img)
   
-            f= plot_resize(img, scale, nnscale, bscale, ed_img, ed_nnscale, ed_bscale, mr_img, wmr_img, mdr_img, BigImages[0]["ROIs"][0], BigImages[0]["Filename"],counter=counter)
+            f= plot_resize(img, scale, nnscale, bscale, ed_img, ed_nnscale, ed_bscale, mr_img, wmr_img, mdr_img, ed_mr_img, ed_wmr_img,ed_mdr_img, BigImages[0]["ROIs"][0], BigImages[0]["Filename"],counter=counter)
             counter+=1
         
     plt.show()
@@ -368,7 +400,6 @@ else:
     document = Document()
     document.add_heading('Report',0) # tworzenie nagłówków druga wartość to poziom nagłówka 
     document.add_paragraph("Autor: ")
-    document.add_paragraph("Proszę wstawić mi 2 jeżeli tego nie wyedytuję")
     document.add_section()
     document.add_heading("Test algorytmów powiększania",1)
     counter = 1 
@@ -411,7 +442,7 @@ else:
 
             for ROI in file_dict['ROIs']:
 
-                f = plot_resize(img, scale, nnscale, bscale, ed_img, ed_nnscale, ed_bscale, mr_img, wmr_img, mdr_img, ROI, filename,counter=counter) # set figszie
+                f = plot_resize(img, scale, nnscale, bscale, ed_img, ed_nnscale, ed_bscale, mr_img, wmr_img, mdr_img, ed_mr_img, ed_wmr_img,ed_mdr_img, ROI, filename,counter=counter) # set figszie
 
                 memfile = BytesIO() 
                 f.savefig(memfile)
