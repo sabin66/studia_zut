@@ -7,6 +7,10 @@ from docx import Document
 from docx.shared import Inches
 from io import BytesIO
 
+def imgToUInt8(img):
+    if not np.issubdtype(img.dtype,np.unsignedinteger):
+        img = (img*255).astype('uint8')
+    return img
 
 ##########################################
 ### Settings #############################
@@ -15,7 +19,7 @@ from io import BytesIO
 Test = True
 Scaling_test = False # run only artificial test for scaling methods
 
-ScalesUp = [50] # list of parameters values
+ScalesUp = [5] # list of parameters values
 ScalesDown =[0.5] # list of parameters values
 
 OutputRaportFile = ".docx" 
@@ -30,8 +34,8 @@ ImgDir = r'.' # Address of folder with files (do nor delete `r``)
 SmallImages=["IMG_SMALL/SMALL_0002.png"] # list of file names
 BigImages=[ #list of dictionaries
     {
-        "Filename":"IMG_BIG/BIG_0002.jpg", # File name
-        "ROIs":[[0,0,250,250]] # list of Region of interests for this image more then 1 per file
+        "Filename":"IMG_BIG/BIG_0004.png", # File name
+        "ROIs":[[0,0,1000,1000]] # list of Region of interests for this image more then 1 per file
     }
 ]
 
@@ -225,8 +229,21 @@ def MedianResizing(In_img,scale):
     return Out_img.astype(In_img.dtype)
 
 def EdgeDetection(img):
-    ## configure your edge detection algorithm
-    edges=img
+    if img.dtype != np.uint8:
+        if img.max() <= 1.0:
+            img_int = imgToUInt8(img)
+        else:
+            img_int = img.astype(np.uint8)
+
+    else:
+        img_int = img
+
+    if len(img_int.shape) < 3:
+        gray = img_int
+    else:
+        gray = cv2.cvtColor(img_int,cv2.COLOR_RGB2GRAY)
+    edges = cv2.Canny(gray,100,200)
+    edges = cv2.cvtColor(edges,cv2.COLOR_GRAY2RGB)
     return edges
 
 ##########################################
