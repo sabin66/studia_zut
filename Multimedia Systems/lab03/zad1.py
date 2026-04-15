@@ -109,12 +109,47 @@ def dith_randm(img):
 
 def dith_ordered(img,Pallet,r=1,M=M2):
         out_img = img.copy()
-        ##### 
+        n = M.shape[0]
+        M_pre = (M+1) / (n**2) - 0.5
+        for w in range(img.shape[0]):
+              for k in range(img.shape[1]):
+                    tmp = img[w,k] + r * M_pre[w % n, k % n]
+                    new_p = colorFit(tmp,Pallet)
+                    if len(new_p) == 1:
+                        out_img[w,k] = new_p[0]
+                    else:
+                          out_img[w,k] = new_p[:]
+                    
         return out_img.astype(img.dtype)
 
 def dith_FS(img,Pallet):
         out_img = img.copy()
-        ##### 
+        h = out_img.shape[0]
+        w = out_img.shape[1]
+        
+        for w in range(h):
+            for k in range(w):
+                old_p = out_img[w, k].copy()
+                new_p = colorFit(old_p, Pallet)
+                
+                if len(new_p) == 1:
+                        out_img[w, k] = new_p[0]
+                else:
+                        out_img[w, k] = new_p[:]
+                
+                quant_error = old_p - new_p
+                
+                if k + 1 < w:
+                        out_img[w, k + 1] += quant_error * 7 / 16
+                        
+                if k - 1 >= 0 and w + 1 < h:
+                        out_img[w + 1, k - 1] += quant_error * 3 / 16
+                        
+                if w + 1 < h:
+                        out_img[w + 1, k] += quant_error * 5 / 16
+                        
+                if k + 1 < w and w + 1 < h:
+                        out_img[w + 1, k + 1] += quant_error * 1 / 16
         return out_img.astype(img.dtype)
 
 
