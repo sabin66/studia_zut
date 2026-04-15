@@ -20,7 +20,7 @@ Test = False
 Scaling_test = False # run only artificial test for scaling methods
 
 ScalesUp = [5,10,15] # list of parameters values
-ScalesDown =[0.5,0.3,0.1] # list of parameters values
+ScalesDown =[0.05,0.1,0.15] # list of parameters values
 
 OutputRaportFile = ".docx" 
 
@@ -35,7 +35,11 @@ SmallImages=["IMG_SMALL/SMALL_0002.png","IMG_SMALL/SMALL_0005.JPG","IMG_SMALL/SM
 BigImages=[ #list of dictionaries
     {
         "Filename":"IMG_BIG/BIG_0004.png", # File name
-        "ROIs":[[0,0,1000,1000],[0,0,1250,1250],[0,0,2000,2000]] # list of Region of interests for this image more then 1 per file
+        "ROIs":[[0,0,1000,1000],[400,400,1800,1800],[600,600,1600,1600]] # list of Region of interests for this image more then 1 per file
+    },
+    {
+        "Filename":"IMG_BIG/BIG_0001.jpg", # File name
+        "ROIs":[[0,0,1000,1000],[400,400,1800,1800],[2000,2000,3600,3600]]
     }
 ]
 

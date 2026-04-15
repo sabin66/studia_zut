@@ -264,7 +264,7 @@ else:
         img=imgToFloat(plt.imread(os.path.join(ImgDir,file)))
         for palett in Color_pallets:
             f = process_and_plot_Color(img=img,palett=palett,filename=file,counter=counter)
-            memfile = BytesIO() 
+            memfile = BytesIO()
             f.savefig(memfile)
             document.add_picture(memfile, width=Inches(6)) # set document size
             memfile.close()
