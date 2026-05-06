@@ -51,8 +51,8 @@ ImgDir = r'.' # Address of folder with files (do nor delete `r``)
 
 Images=[ #list of dictionaries
     {
-        "Filename":"", # File name
-        "ROIs":[[250,500,1000,1000]] # list of Region of interests for this image more then 1 per file
+        "Filename":"webcam-toy-photo22.jpg", # File name
+        "ROIs":[[250,500,128,128]] # list of Region of interests for this image more then 1 per file
     }
 ]
 
@@ -160,7 +160,7 @@ def CompressLayer(L, Q):
     return S
 
 def DecompressLayer(S, Q, layer_shape):
-    L = np.zeros(layer_shape)  # zadeklaruj odpowiedniego rozmiaru macierz
+    L = np.zeros(layer_shape)
     for idx, i in enumerate(range(0, S.shape[0], 64)):
         vector = S[i:(i+64)]
         m = L.shape[1] / 8
@@ -171,20 +171,33 @@ def DecompressLayer(S, Q, layer_shape):
 
 def CompressJPEG(RGB, Ratio="4:4:4", QY=QN, QC=QN):
     YCrCb = cv2.cvtColor(RGB, cv2.COLOR_RGB2YCrCb).astype(int)
-    JPEG = JPEG_class()
+    
     y_layer = YCrCb[:,:,0].astype(float)
     cr_layer = YCrCb[:,:,1].astype(float)
     cb_layer = YCrCb[:,:,2].astype(float)
 
-    y_layer = chroma_subsample(y_layer,"4:4:4")
-    cr_layer = chroma_subsample(cr_layer,"4:4:4")
-    cb_layer = chroma_subsample(cb_layer,"4:4:4")
+    cr_sub = chroma_subsample(cr_layer, Ratio)
+    cb_sub = chroma_subsample(cb_layer, Ratio)
 
-    JPEG.Y = CompressLayer(y_layer,JPEG.QY)
-    JPEG.Cr = CompressLayer(cr_layer,JPEG.QY)
-    JPEG.Cb = CompressLayer(cb_layer,JPEG.QY)
-
+    Y_compressed = CompressLayer(y_layer, QY)
+    Cr_compressed = CompressLayer(cr_sub, QC)
+    Cb_compressed = CompressLayer(cb_sub, QC)
     
+    Y_rle = rle_encode(Y_compressed)
+    Cr_rle = rle_encode(Cr_compressed)
+    Cb_rle = rle_encode(Cb_compressed)
+
+    JPEG = JPEG_class(Y_rle, Cb_rle, Cr_rle, RGB.shape, Ratio=Ratio, QY=QY, QC=QC)
+    JPEG.YShape = y_layer.shape
+    JPEG.CrShape = cr_sub.shape
+    JPEG.CbShape = cb_sub.shape
+
+    JPEG.Y_raw_len = len(Y_compressed)
+    JPEG.Cr_raw_len = len(Cr_compressed)
+    JPEG.Cb_raw_len = len(Cb_compressed)
+    JPEG.Y_rle_len = len(Y_rle)
+    JPEG.Cr_rle_len = len(Cr_rle)
+    JPEG.Cb_rle_len = len(Cb_rle)
 
     return JPEG
     
