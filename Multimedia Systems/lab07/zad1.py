@@ -12,7 +12,7 @@ import scipy.fftpack
 ### Settings #############################
 ##########################################
 
-Test=True
+Test=False
 
 OutputRaportFile = "yes.docx" 
 
@@ -49,10 +49,22 @@ QN= np.ones((8,8))
 
 ImgDir = r'.' # Address of folder with files (do nor delete `r``)
 
-Images=[ #list of dictionaries
+Images=[ 
     {
-        "Filename":"webcam-toy-photo22.jpg", # File name
-        "ROIs":[[250,500,128,128]] # list of Region of interests for this image more then 1 per file
+        "Filename":"IMG_8375.jpg",
+        "ROIs":[[1000,1000,128,128], [500,500,128,128], [1500,2000,128,128]]
+    },
+    {
+        "Filename":"webcam-toy-photo22.jpg",
+        "ROIs":[[250,200,128,128], [100,100,128,128], [400,400,128,128]]
+    },
+    {
+        "Filename":"parrot.jpg",
+        "ROIs":[[300,300,128,128], [500,500,128,128], [700,400,128,128]]
+    },
+    {
+        "Filename":"city.jpg",
+        "ROIs":[[200,200,128,128], [400,600,128,128], [800,800,128,128]]
     }
 ]
 
@@ -282,7 +294,7 @@ if Test:
 else:
     # generate raport
     document = Document()
-    document.add_heading('Report',0) # tworzenie nagłówków druga wartość to poziom nagłówka 
+    document.add_heading('Report',0)
     document.add_paragraph("Autor: ")
     document.add_section()
     document.add_heading("Fragmenty wygenerowane na podstawie działania funkcji",1)
@@ -308,7 +320,6 @@ else:
                     f.savefig(memfile)
                     document.add_picture(memfile, width=Inches(6)) # set document size
                     
-                    # Dodanie informacji o kompresji RLE
                     document.add_paragraph(
                         f"Chroma: {Chroma}, Kwantyzacja: {Quant}\n"
                         f"  Y:  przed RLE={tJPEG.Y_raw_len}, po RLE={tJPEG.Y_rle_len}, redukcja={100*(1-tJPEG.Y_rle_len/tJPEG.Y_raw_len):.1f}%\n"
@@ -317,7 +328,7 @@ else:
                     )
                     
                     memfile.close()
-                    f.clf()
+                    plt.close(f)
                     Counter+=1
     document.add_section()
     document.add_heading("Podsumowanie i wnioski",1)
