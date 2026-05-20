@@ -14,11 +14,11 @@ from io import BytesIO
 Only_Tests=True
 bit_test=8
 
-DPCM_n=999
+DPCM_n=5
 DPCM_predictor=np.mean
 
-OutputRaportFile = ".docx" 
-OutputFolder="" # place for all your new audio files will be
+OutputRaportFile = "raport.docx" 
+OutputFolder="audio" # place for all your new audio files will be
 
 ##########################################
 ### Data Set #############################
@@ -26,7 +26,7 @@ OutputFolder="" # place for all your new audio files will be
 
 AudioDir = r'.' # Address of folder with files (do nor delete `r``)
 
-SingFiles=[] # list of file names of with Singing Voice
+SingFiles=['SING/sing_high1.wav','SING/sing_low1.wav','SING/sing_medium1.wav'] # list of file names of with Singing Voice
 
 ##########################################
 ### Functions to  ########################
@@ -51,8 +51,8 @@ def Kwant(x,bit):
     return DataF.astype(x.dtype)
 
 def A_law_compress(x):
-    y=x
-    A=87.6
+    y = np.copy(x)
+    A = 87.6
     x_abs = abs(y)
     idx = (x_abs < (1/A))
     s = np.sign(y)
@@ -61,8 +61,8 @@ def A_law_compress(x):
     return y
 
 def A_law_decompress(x):
-    y=x
-    A=87.6
+    y = np.copy(x)
+    A = 87.6
     y_abs = abs(y)
     s = np.sign(y)
     idx = (y_abs < (1/A))
@@ -97,7 +97,11 @@ def DPCM_compress(x,bit):
     return y
 
 def DPCM_decompress(x):
-    y=x
+    y = np.zeros(x.shape)
+    e = 0
+    for i in range(0, x.shape[0]):
+        y[i] = x[i] + e
+        e += x[i]
     return y
 
 def DPCM_compress_pred(x,bit,n,predictor=np.mean): 
@@ -113,7 +117,14 @@ def DPCM_compress_pred(x,bit,n,predictor=np.mean):
     return y
 
 def DPCM_decompress_pred(x,n,predictor=np.mean):
-    y=x
+    y = np.zeros(x.shape)
+    e = 0
+    for i in range(0, x.shape[0]):
+        y[i] = x[i] + e
+        
+        idx = (np.arange(i - n, i, 1, dtype=int) + 1)
+        idx = np.delete(idx, idx < 0)
+        e = predictor(y[idx])
     return y
 
 ##########################################
@@ -125,8 +136,7 @@ document = Document()
 if not Only_Tests:
     # generate raport
     document.add_heading('Report',0) # tworzenie nagłówków druga wartość to poziom nagłówka 
-    document.add_paragraph("Autor: ")
-    document.add_paragraph("Proszę wstawić mi 2 jeżeli tego nie wyedytuję")
+    document.add_paragraph("Autor: Dorian Sobierański")
     document.add_section()
     document.add_heading('Wykresy testujące działanie algorytmów',1)
 
@@ -194,30 +204,52 @@ else:
     f2.clf()  
     document.add_section()
     document.add_heading("Obserwacje na podstawie odsłuchanych plików ",1)
-    document.add_paragraph("Tu proszę odpowiedzieć własnymi słowami na zadanie 2.1")
+    document.add_paragraph("Z wykresów i odsłuchu wynika, że metody a-law i mu-law kompresują głównie głośne dźwięki, "
+        "zachowując dużą precyzję dla cichych detali. Dlatego wokale brzmią po nich bardzo naturalnie. "
+        "Z kolei DPCM nie kompresuje samej głośności, lecz różnice między kolejnymi próbkami. "
+        "W praktyce algorytm ten świetnie radzi sobie ze spokojnym śpiewem, ale gubi się i zauważalnie zniekształca dźwięk "
+        "przy nagłych, ostrych skokach częstotliwości.")
     document.add_heading("Zadanie 2.2",2)
-    document.add_paragraph("Tu proszę zamieścić treść dla zadania 2.2")
+    document.add_paragraph("Dla standardowej wartości 8 bitów, jakość dźwięku we wszystkich metodach jest bardzo dobra. "
+        "Pliki po kompresji logarytmicznej brzmią naturalnie, słychać jedynie lekki szum "
+        "oraz taki telefoniczny efekt. Sygnał odtworzony za pomocą metody DPCM również jest "
+        "w pełni zrozumiały, przy czym slychać mocniej niż w innych metodach szum. Nie słyszałem wyraźnej różnicy między predykcją a jej brakiem.")
     document.add_heading("Zadanie 2.3",2)
-    document.add_paragraph("Tu proszę zamieścić treść dla zadania 2.3 (może być tabelka). Uwaga jak nie jesteście w stanie rozpoznać zawrtości nie musice słuchać dla niższych wartości bitowych")
+    document.add_paragraph("Z przeprowadzonych testów wynika, że przy zejściu na 7 i 6 bitów sygnał pozostaje w pełni zrozumiały, "
+        "choć stopniowo narasta szum kwantyzacji. Przy 5 i 4 bitach jakość drastycznie spada, "
+        "ale treść wokalu wciąż można z trudem odszyfrować. Poniżej 4 bitów dźwięk staje się całkowicie "
+        "niezrozumiałym trzeszczeniem. Dodatkowo - przy sing_high1_mu_LAW_3b w połowie dźwięku następuje ogromne podgłoszenie, które nie jest najmilszym doświadczeniem" \
+        "gdy ma się słuchawki. DCPM powoduje występowanie szumów już przy 7 bitach, podczas gdy mu i a law trzyma się wtedy dobrze.")
     document.add_section()
     document.add_heading("Podsumowanie i Wnioski",1)
-    document.add_paragraph("Tu proszę krótko podsumować wszystko")
+    document.add_paragraph(
+        "1. Metody a-law, mu-law maskują szum dla cichych dźwięków, co idealnie pokrywa się z właściwościami ludzkiego słuchu.\n"
+        "2. Zastosowanie predykcji w algorytmie DPCM jest kluczowe, ponieważ poprawia jakość dźwięku i stabilność względem nagłych zmian sygnału.\n"
+        "3. Redukcja informacji poniżej 4-5 bitów całkowicie niszczy jakość.\n"
+        "4. Wokale 'high' szybciej tracą jakość, ponieważ gwałtowne zmiany w wysokich rejestrach są trudniejsze do skompresowania i przewidzenia algorytmem DPCM." \
+        "Analizowane pliki - sing_high1, sing_low1, sing_medium1"
+    )
     document.save(OutputRaportFile) 
-    # Audio files Generator
+    if OutputFolder != "":
+        os.makedirs(OutputFolder, exist_ok=True)
     for file in SingFiles:
         Signal, Fs = sf.read(os.path.join(AudioDir,file), dtype='float32') 
-        sfile=file.split(os.sep)[-1].split('.')
+        
+        nazwa_pliku = os.path.basename(file)
+        sfile_name = os.path.splitext(nazwa_pliku)[0]
+        
         for bit in [8,7,6,5,4,3,2]:
-            y_alaw_decomp =A_law_decompress(Kwant(A_law_compress(Signal),bit_test))
-            y_mulaw_decomp =mu_law_decompress(Kwant(mu_law_compress(Signal),bit_test))
+            y_alaw_decomp = A_law_decompress(Kwant(A_law_compress(Signal), bit))
+            y_mulaw_decomp = mu_law_decompress(Kwant(mu_law_compress(Signal), bit))
 
-            dpcm_c=DPCM_compress(Signal,bit_test)
-            dpcm_dec=DPCM_decompress(dpcm_c)
-            dpcm_c_p=DPCM_compress_pred(Signal,bit_test,n=DPCM_n,predictor=DPCM_predictor)
-            dpcm_dec_p=DPCM_decompress_pred(dpcm_c_p,n=DPCM_n,predictor=DPCM_predictor)
-            sf.write(os.path.join(OutputFolder,f"{sfile[0]}_A_LAW_{bit}b.wav"),x=y_alaw_decomp,samplerate=Fs)
-            sf.write(os.path.join(OutputFolder,f"{sfile[0]}_mu_LAW_{bit}b.wav"),x=y_mulaw_decomp,samplerate=Fs)
-            sf.write(os.path.join(OutputFolder,f"{sfile[0]}_DPCM_bp_{bit}b.wav"),x=dpcm_dec,samplerate=Fs)
-            sf.write(os.path.join(OutputFolder,f"{sfile[0]}_DPCM_zp_{bit}b.wav"),x=dpcm_dec_p,samplerate=Fs)
+            dpcm_c = DPCM_compress(Signal, bit)
+            dpcm_dec = DPCM_decompress(dpcm_c)
+            dpcm_c_p = DPCM_compress_pred(Signal, bit, n=DPCM_n, predictor=DPCM_predictor)
+            dpcm_dec_p = DPCM_decompress_pred(dpcm_c_p, n=DPCM_n, predictor=DPCM_predictor)
+            
+            sf.write(os.path.join(OutputFolder, f"{sfile_name}_A_LAW_{bit}b.wav"), data=y_alaw_decomp, samplerate=Fs)
+            sf.write(os.path.join(OutputFolder, f"{sfile_name}_mu_LAW_{bit}b.wav"), data=y_mulaw_decomp, samplerate=Fs)
+            sf.write(os.path.join(OutputFolder, f"{sfile_name}_DPCM_bp_{bit}b.wav"), data=dpcm_dec, samplerate=Fs)
+            sf.write(os.path.join(OutputFolder, f"{sfile_name}_DPCM_zp_{bit}b.wav"), data=dpcm_dec_p, samplerate=Fs)
 
             

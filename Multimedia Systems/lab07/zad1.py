@@ -51,12 +51,12 @@ ImgDir = r'.' # Address of folder with files (do nor delete `r``)
 
 Images=[ 
     {
-        "Filename":"IMG_8375.jpg",
-        "ROIs":[[1000,1000,128,128], [500,500,128,128], [1500,2000,128,128]]
+        "Filename":"zoo.jpg",
+        "ROIs":[[200,300,128,128], [400,500,128,128], [500,500,128,128]]
     },
     {
-        "Filename":"webcam-toy-photo22.jpg",
-        "ROIs":[[250,200,128,128], [100,100,128,128], [400,400,128,128]]
+        "Filename":"island.jpg",
+        "ROIs":[[250,200,128,128], [1000,600,128,128], [400,400,128,128]]
     },
     {
         "Filename":"parrot.jpg",
@@ -278,7 +278,6 @@ if Test:
             else:
                 tJPEG=CompressJPEG(fragment,Ratio=Chroma,QY=QN,QC=QN)
                 
-            # Wypisanie informacji o kompresji RLE
             print(f"=== Chroma: {Chroma}, Kwantyzacja: {Quant} ===")
             print(f"  Y:  przed RLE={tJPEG.Y_raw_len}, po RLE={tJPEG.Y_rle_len}, redukcja={100*(1-tJPEG.Y_rle_len/tJPEG.Y_raw_len):.1f}%")
             print(f"  Cr: przed RLE={tJPEG.Cr_raw_len}, po RLE={tJPEG.Cr_rle_len}, redukcja={100*(1-tJPEG.Cr_rle_len/tJPEG.Cr_raw_len):.1f}%")
@@ -295,7 +294,7 @@ else:
     # generate raport
     document = Document()
     document.add_heading('Report',0)
-    document.add_paragraph("Autor: ")
+    document.add_paragraph("Autor: Dorian Sobierański")
     document.add_section()
     document.add_heading("Fragmenty wygenerowane na podstawie działania funkcji",1)
     Counter=1
@@ -332,5 +331,4 @@ else:
                     Counter+=1
     document.add_section()
     document.add_heading("Podsumowanie i wnioski",1)
-    document.add_paragraph("Tu proszę zebrać wszystkie obserwacje na podstawie powyższych wykresów i napisać wnioski.")
     document.save(OutputRaportFile) 
