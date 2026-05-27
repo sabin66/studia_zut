@@ -5,10 +5,15 @@ import os
 from skimage.metrics import structural_similarity as ssim
 
 # funkcje print_table plot_metrics przy pomocy gemini
+
 OUTPUT_DIR = "wyniki"
 os.makedirs(OUTPUT_DIR, exist_ok=True)
 IMG_DIR = "obrazy_testowe"
 os.makedirs(IMG_DIR, exist_ok=True)
+JPEG_QUALITIES = [10, 20, 30, 40, 50, 60, 70, 75]
+BLUR_SIZES = [3, 5, 7, 9, 11, 15, 19, 23]
+NOISE_ALPHAS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0]
+METRIC_NAMES = ['MSE', 'NMSE', 'PSNR', 'IF', 'SSIM']
 
 
 def calc_MSE(original, modified):
@@ -61,7 +66,7 @@ def calc_all_metrics(original, modified):
 
 def jpeg_compression(img, quality):
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
-    result, encimg = cv2.imencode('.jpg', img, encode_param)
+    _, encimg = cv2.imencode('.jpg', img, encode_param)
     decimg = cv2.imdecode(encimg, 1)
     return decimg
 
@@ -75,13 +80,6 @@ def gaussian_noise(img, alpha):
     gauss = np.random.normal(0, sigma, img.shape)
     noisy = (img + alpha * gauss).clip(0, 255).astype(np.uint8)
     return noisy
-
-JPEG_QUALITIES = [10, 20, 30, 40, 50, 60, 70, 75]
-BLUR_SIZES = [3, 5, 7, 9, 11, 15, 19, 23]
-NOISE_ALPHAS = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.8, 1.0]
-
-METRIC_NAMES = ['MSE', 'NMSE', 'PSNR', 'IF', 'SSIM']
-
 
 def run_experiment(img, img_name, method_name, params, func, param_label):
     results = []
@@ -118,7 +116,7 @@ def plot_metrics(results, params, method_name, img_name, param_label):
     print(f"  Zapisano wykres: {fname}")
 
 
-def print_table(results, params, method_name, param_label):
+def print_table(results):
     header = f"{'Parametr':>10}"
     for m in METRIC_NAMES:
         header += f" | {m:>12}"
@@ -155,38 +153,7 @@ if __name__ == "__main__":
         all_results[(img_name, method_name)] = results
 
         print(f"\nTabela wyników - {method_name} ({param_label}):")
-        print_table(results, params, method_name, param_label)
+        print_table(results)
 
         plot_metrics(results, params, method_name, img_name, param_label)
 
-    print("WNIOSKI")
-    print("""
-1. MSE - rośnie wraz ze wzrostem zniekształceń (korelacja rosnąca).
-   Dla kompresji JPEG: MSE rośnie gdy jakość maleje (korelacja odwrotna do parametru jakości).
-   Dla rozmycia: MSE rośnie wraz z rozmiarem filtra (korelacja rosnąca, zbliżona do kwadratowej).
-   Dla szumu: MSE rośnie wraz z alpha (korelacja rosnąca, zbliżona do kwadratowej).
-
-2. NMSE - zachowuje się analogicznie do MSE, rośnie ze wzrostem zniekształceń.
-   Jest znormalizowana, więc pozwala porównywać obrazy o różnych jasnościach.
-
-3. PSNR - maleje wraz ze wzrostem zniekształceń (korelacja malejąca/logarytmiczna).
-   Im niższy PSNR, tym gorsza jakość. Wartości powyżej 30 dB oznaczają dobrą jakość,
-   poniżej 20 dB jakość jest wyraźnie pogorszona.
-
-4. IF - maleje wraz ze wzrostem zniekształceń (korelacja malejąca).
-   Wartość 1 oznacza identyczne obrazy, wartości bliskie 0 oznaczają duże zniekształcenia.
-
-5. SSIM - maleje wraz ze wzrostem zniekształceń (korelacja malejąca).
-   Uwzględnia percepcję człowieka (jasność, kontrast, strukturę).
-   Wartość 1 oznacza identyczne obrazy.
-
-Podsumowanie eksperymentu:
-- Wszystkie miary prawidłowo odzwierciedlają poziom zniekształceń obrazu.
-- MSE i NMSE rosną ze wzrostem degradacji, natomiast PSNR, IF i SSIM maleją.
-- SSIM jest najbardziej zbliżona do ludzkiej percepcji jakości obrazu.
-- Kompresja JPEG wprowadza artefakty blokowe widoczne szczególnie przy niskich jakościach.
-- Rozmycie gaussowskie stopniowo zatraca detale obrazu.
-- Szum gaussowski wprowadza losowe zakłócenia widoczne na całym obrazie.
-""")
-
-    print(f"\nWyniki zapisano w katalogu: {OUTPUT_DIR}/")
