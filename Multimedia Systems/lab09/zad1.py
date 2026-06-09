@@ -66,8 +66,8 @@ def calc_all_metrics(original, modified):
 
 def jpeg_compression(img, quality):
     encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), quality]
-    _, encimg = cv2.imencode('.jpg', img, encode_param)
-    decimg = cv2.imdecode(encimg, 1)
+    _, img_encoded = cv2.imencode('.jpg', img, encode_param)
+    decimg = cv2.imdecode(img_encoded, 1)
     return decimg
 
 

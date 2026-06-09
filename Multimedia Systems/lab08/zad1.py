@@ -8,7 +8,7 @@ import os
 ##############################################################################
 
 kat=r'.'                                 # katalog z plikami wideo
-plik="clip_1.mp4"                       # nazwa pliku
+plik="clip_2.mp4"                       # nazwa pliku
 ile=100                                 # ile klatek odtworzyć? <0 - całość
 key_frame_counter=4                     # co która klatka ma być kluczowa i nie podlegać kompresji
 plot_frames=np.array([31])              # automatycznie wyrysuj wykresy
@@ -16,7 +16,7 @@ auto_pause_frames=np.array([25])        # automatycznie za pauzuj dla klatki
 subsampling="4:4:4"                     # parametry dla chroma subsampling
 dzielnik=1                              # dzielnik przy zapisie różnicy
 wyswietlaj_kaltki=True                  # czy program ma wyświetlać klatki
-ROI = [[0,100,0,100]]                   # wyświetlane fragmenty (można podać kilka )
+ROI = [[150,350,800,1100]]                   # wyświetlane fragmenty (można podać kilka )
 
 ##############################################################################
 ####     Kompresja i dekompresja    ##########################################
@@ -129,61 +129,88 @@ def decompress_not_KeyFrame(Compress_data,  KeyFrame , inne_paramerty_do_dopisan
     Cr = KeyFrame.semi_Cr + Compress_data.semi_Cr * dzielnik
     return frame_layers_to_image(Y,Cr,Cb,subsampling)
 
-def plotDiffrence(ReferenceFrame,DecompressedFrame,ROI):
-    # Porównanie w przestrzeni RGB (konwersja z YCrCb do BGR, potem do RGB)
+def plotDiffrence(ReferenceFrame,DecompressedFrame,ROI, save_path=None, title_extra=""):
+    # Porównanie: obraz w RGB, warstwy różnic w Y/Cb/Cr
     # ROI - Region of Interest współrzędne fragmentu który chcemy przybliżyć i ocenić w formacie [w1,w2,k1,k2]
     
+    # Konwersja do RGB na potrzeby obrazu
     ref_BGR = cv2.cvtColor(ReferenceFrame, cv2.COLOR_YCrCb2BGR)
     dec_BGR = cv2.cvtColor(DecompressedFrame, cv2.COLOR_YCrCb2BGR)
     ref_RGB = cv2.cvtColor(ref_BGR, cv2.COLOR_BGR2RGB)
     dec_RGB = cv2.cvtColor(dec_BGR, cv2.COLOR_BGR2RGB)
     
-    ref_roi = ref_RGB[ROI[0]:ROI[1], ROI[2]:ROI[3]]
-    dec_roi = dec_RGB[ROI[0]:ROI[1], ROI[2]:ROI[3]]
-    diff_rgb = np.abs(ref_roi.astype(float) - dec_roi.astype(float))
+    ref_rgb_roi = ref_RGB[ROI[0]:ROI[1], ROI[2]:ROI[3]]
+    dec_rgb_roi = dec_RGB[ROI[0]:ROI[1], ROI[2]:ROI[3]]
+    diff_rgb = np.abs(ref_rgb_roi.astype(float) - dec_rgb_roi.astype(float))
     
-    # Dodatkowe kanały YCbCr do analizy
+    # Kanały YCbCr do analizy warstw
+    # ReferenceFrame jest w formacie YCrCb (OpenCV): kanał 0=Y, 1=Cr, 2=Cb
     ref_ycrcb_roi = ReferenceFrame[ROI[0]:ROI[1], ROI[2]:ROI[3]]
     dec_ycrcb_roi = DecompressedFrame[ROI[0]:ROI[1], ROI[2]:ROI[3]]
-    diff_ycrcb = np.abs(ref_ycrcb_roi.astype(float) - dec_ycrcb_roi.astype(float))
     
-    fig, axs = plt.subplots(4, 3, figsize=(16, 12))
-    fig.suptitle("Porównanie klatek (ROI: [{},{}] x [{},{}])".format(ROI[0],ROI[1],ROI[2],ROI[3]), fontsize=14)
+    ref_Y  = ref_ycrcb_roi[:,:,0].astype(float)
+    ref_Cr = ref_ycrcb_roi[:,:,1].astype(float)
+    ref_Cb = ref_ycrcb_roi[:,:,2].astype(float)
+    dec_Y  = dec_ycrcb_roi[:,:,0].astype(float)
+    dec_Cr = dec_ycrcb_roi[:,:,1].astype(float)
+    dec_Cb = dec_ycrcb_roi[:,:,2].astype(float)
     
-    # Wiersz 0: RGB - oryginał, różnica, dekompresja
-    axs[0,0].imshow(ref_roi)
+    diff_Y  = np.abs(ref_Y - dec_Y)
+    diff_Cb = np.abs(ref_Cb - dec_Cb)
+    diff_Cr = np.abs(ref_Cr - dec_Cr)
+    
+    # Obliczenie metryk jakości w RGB
+    mse_val = np.mean(diff_rgb**2)
+    psnr_val = 10 * np.log10(255**2 / mse_val) if mse_val > 0 else float('inf')
+    
+    fig, axs = plt.subplots(4, 3, figsize=(16, 14))
+    main_title = f"Porównanie klatek (ROI: [{ROI[0]},{ROI[1]}] x [{ROI[2]},{ROI[3]}])"
+    if title_extra:
+        main_title += f"\n{title_extra}"
+    main_title += f"\nMSE={mse_val:.2f}, PSNR={psnr_val:.2f} dB"
+    fig.suptitle(main_title, fontsize=13)
+    
+    # Wiersz 0: Obraz RGB - oryginał, różnica, dekompresja
+    axs[0,0].imshow(ref_rgb_roi)
     axs[0,0].set_title("Oryginał (RGB)")
     axs[0,1].imshow(diff_rgb.astype(np.uint8))
     axs[0,1].set_title("Różnica |RGB|")
-    axs[0,2].imshow(dec_roi)
+    axs[0,2].imshow(dec_rgb_roi)
     axs[0,2].set_title("Dekompresja (RGB)")
     
-    # Wiersz 1: Kanał R
-    axs[1,0].imshow(ref_roi[:,:,0], cmap='Reds', vmin=0, vmax=255)
-    axs[1,0].set_title("Oryginał R")
-    axs[1,1].imshow(diff_rgb[:,:,0], cmap='hot', vmin=0, vmax=max(np.max(diff_rgb[:,:,0]),1))
-    axs[1,1].set_title("Różnica R (max={:.1f})".format(np.max(diff_rgb[:,:,0])))
-    axs[1,2].imshow(dec_roi[:,:,0], cmap='Reds', vmin=0, vmax=255)
-    axs[1,2].set_title("Dekompresja R")
+    # Wiersz 1: Warstwa Y (luminancja)
+    axs[1,0].imshow(ref_Y, cmap='gray', vmin=0, vmax=255)
+    axs[1,0].set_title("Oryginał Y")
+    axs[1,1].imshow(diff_Y, cmap='hot', vmin=0, vmax=max(np.max(diff_Y),1))
+    axs[1,1].set_title("Różnica Y (max={:.1f})".format(np.max(diff_Y)))
+    axs[1,2].imshow(dec_Y, cmap='gray', vmin=0, vmax=255)
+    axs[1,2].set_title("Dekompresja Y")
     
-    # Wiersz 2: Kanał G
-    axs[2,0].imshow(ref_roi[:,:,1], cmap='Greens', vmin=0, vmax=255)
-    axs[2,0].set_title("Oryginał G")
-    axs[2,1].imshow(diff_rgb[:,:,1], cmap='hot', vmin=0, vmax=max(np.max(diff_rgb[:,:,1]),1))
-    axs[2,1].set_title("Różnica G (max={:.1f})".format(np.max(diff_rgb[:,:,1])))
-    axs[2,2].imshow(dec_roi[:,:,1], cmap='Greens', vmin=0, vmax=255)
-    axs[2,2].set_title("Dekompresja G")
+    # Wiersz 2: Warstwa Cb (chrominancja niebieska)
+    axs[2,0].imshow(ref_Cb, cmap='gray', vmin=0, vmax=255)
+    axs[2,0].set_title("Oryginał Cb")
+    axs[2,1].imshow(diff_Cb, cmap='hot', vmin=0, vmax=max(np.max(diff_Cb),1))
+    axs[2,1].set_title("Różnica Cb (max={:.1f})".format(np.max(diff_Cb)))
+    axs[2,2].imshow(dec_Cb, cmap='gray', vmin=0, vmax=255)
+    axs[2,2].set_title("Dekompresja Cb")
     
-    # Wiersz 3: Kanał B
-    axs[3,0].imshow(ref_roi[:,:,2], cmap='Blues', vmin=0, vmax=255)
-    axs[3,0].set_title("Oryginał B")
-    axs[3,1].imshow(diff_rgb[:,:,2], cmap='hot', vmin=0, vmax=max(np.max(diff_rgb[:,:,2]),1))
-    axs[3,1].set_title("Różnica B (max={:.1f})".format(np.max(diff_rgb[:,:,2])))
-    axs[3,2].imshow(dec_roi[:,:,2], cmap='Blues', vmin=0, vmax=255)
-    axs[3,2].set_title("Dekompresja B")
+    # Wiersz 3: Warstwa Cr (chrominancja czerwona)
+    axs[3,0].imshow(ref_Cr, cmap='gray', vmin=0, vmax=255)
+    axs[3,0].set_title("Oryginał Cr")
+    axs[3,1].imshow(diff_Cr, cmap='hot', vmin=0, vmax=max(np.max(diff_Cr),1))
+    axs[3,1].set_title("Różnica Cr (max={:.1f})".format(np.max(diff_Cr)))
+    axs[3,2].imshow(dec_Cr, cmap='gray', vmin=0, vmax=255)
+    axs[3,2].set_title("Dekompresja Cr")
     
     plt.tight_layout()
-    print("Diff RGB min:", np.min(diff_rgb), "max:", np.max(diff_rgb))
+    print("Diff RGB min:", np.min(diff_rgb), "max:", np.max(diff_rgb), f"MSE={mse_val:.2f} PSNR={psnr_val:.2f}dB")
+    
+    if save_path:
+        fig.savefig(save_path, dpi=150, bbox_inches='tight')
+        print(f"Zapisano: {save_path}")
+        plt.close(fig)
+    
+    return mse_val, psnr_val
 
 
 ##############################################################################
@@ -247,4 +274,6 @@ plt.legend()
 plt.xlabel("Numer klatki")
 plt.ylabel("Stopień kompresji [%]")
 plt.title("File:{}, subsampling={}, divider={}, KeyFrame={} ".format(plik,subsampling,dzielnik,key_frame_counter))
+plt.savefig(f"kompresja_{plik.replace('.mp4','')}_{subsampling.replace(':','')}_{dzielnik}_kf{key_frame_counter}.png", dpi=150, bbox_inches='tight')
+print(f"Zapisano wykres liniowy kompresji")
 plt.show()
