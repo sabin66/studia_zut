@@ -40,9 +40,9 @@ OutputFolder = "."
 AudioDir = r'.'
 
 SinFiles = [
-    {"File": "SIN/sin_60Hz.wav", "TimeMargin": [0, 0.02]}, # +
+    {"File": "SIN/sin_60Hz.wav", "TimeMargin": [0, 0.04]}, # +
     {"File": "SIN/sin_440Hz.wav", "TimeMargin": [0, 0.02]}, # ok
-    {"File": "SIN/sin_8000Hz.wav", "TimeMargin": [0, 0.02]}, # -
+    {"File": "SIN/sin_8000Hz.wav", "TimeMargin": [0, 0.01]}, # -
     {"File": "SIN/sin_combined.wav", "TimeMargin": [0, 0.02]} # ok
 ] 
 SingFiles = ["SING/sing_high1.wav","SING/sing_low1.wav","SING/sing_medium1.wav"] 
@@ -60,37 +60,37 @@ def plotAudio(Signal, Fs, axs, fsize, TimeMargin):
     axs[0].set_ylabel('Amplituda')
     axs[0].grid(True)
 
-    N = min(fsize, len(Signal))
-    if N > 0:
-        yf = scipy.fftpack.fft(Signal, fsize)
-        
-        freqs = np.arange(0, Fs / 2, Fs / fsize)
-        amplitudes = np.abs(yf[:fsize//2])
-        amplitudes_db = 20 * np.log10(amplitudes + 1e-10)
-        
-        axs[1].plot(freqs, amplitudes_db)
-        axs[1].set_title(f'Widmo amplitudowe (fsize={fsize})')
-        axs[1].set_xlabel('Częstotliwość [Hz]')
-        axs[1].set_ylabel('Amplituda [dB]')
-        axs[1].grid(True)
+    N = fsize
+    yf = scipy.fftpack.fft(Signal, fsize)
+    
+    freqs = np.linspace(0.0, Fs / 2.0, fsize // 2, endpoint=False)
+    amplitudes = (2.0 / N) * np.abs(yf[:fsize//2])
+    
+    amplitudes_db = 20 * np.log10(amplitudes + 1e-10)
+    
+    axs[1].plot(freqs, amplitudes_db)
+    axs[1].set_title(f'Widmo amplitudowe (fsize={fsize})')
+    axs[1].set_xlabel('Częstotliwość [Hz]')
+    axs[1].set_ylabel('Amplituda [dB]')
+    axs[1].grid(True)
 
-        max_idx = np.argmax(amplitudes_db)
-        max_freq = freqs[max_idx]
-        max_amp = amplitudes_db[max_idx]
-        
-        min_idx = np.argmin(amplitudes_db)
-        min_freq = freqs[min_idx]
-        min_amp = amplitudes_db[min_idx]
-        # dzieki gemini za dopiski na wykresie
-        axs[1].plot(max_freq, max_amp, 'ro') 
-        axs[1].annotate(f'Max: {max_amp:.1f} dB ({max_freq:.1f} Hz)', 
-                        xy=(max_freq, max_amp), xytext=(5, 5),
-                        textcoords='offset points', color='red')
-                        
-        axs[1].plot(min_freq, min_amp, 'bo') 
-        axs[1].annotate(f'Min: {min_amp:.1f} dB ({min_freq:.1f} Hz)', 
-                        xy=(min_freq, min_amp), xytext=(5, -15),
-                        textcoords='offset points', color='blue')
+    max_idx = np.argmax(amplitudes_db)
+    max_freq = freqs[max_idx]
+    max_amp = amplitudes_db[max_idx]
+    
+    min_idx = np.argmin(amplitudes_db)
+    min_freq = freqs[min_idx]
+    min_amp = amplitudes_db[min_idx]
+    # dzieki gemini za dopiski na wykresie
+    axs[1].plot(max_freq, max_amp, 'ro') 
+    axs[1].annotate(f'Max: {max_amp:.1f} dB ({max_freq:.1f} Hz)', 
+                    xy=(max_freq, max_amp), xytext=(5, 5),
+                    textcoords='offset points', color='red')
+                    
+    axs[1].plot(min_freq, min_amp, 'bo') 
+    axs[1].annotate(f'Min: {min_amp:.1f} dB ({min_freq:.1f} Hz)', 
+                    xy=(min_freq, min_amp), xytext=(5, -15),
+                    textcoords='offset points', color='blue')
 
     return axs, max_freq, max_amp, min_freq, min_amp
 
@@ -98,8 +98,8 @@ def Kwant(data, bit):
     d = (2 ** bit) - 1 
     
     if np.issubdtype(data.dtype, np.floating):
-        d_min = np.min(data)
-        d_max = np.max(data)
+        d_min = -1
+        d_max = 1
     else:
         d_min = np.iinfo(data.dtype).min
         d_max = np.iinfo(data.dtype).max
@@ -257,8 +257,6 @@ else:
         
     #document.add_paragraph("")
     document.add_heading("Wnioski ogolne",1)
-    document.add_paragraph("Decymacja - dobor odpowiedniego kroku jest kluczowy. Przy korku 24 dla sin8000 trafiamy akurat w takie pubkty, ze sygnal jest (prawie) rowny zero. Przy odsluchach duzy krok powoduje utrate klarownosci sygnalu, pojawiaja sie 'kosmiczne' efekty." \
-    "KWANTYZACJA - Szum kwantyzacji - przy zmienjszeniu glebi bitowej na wykresach widoczne bylo zattacenie gladkosci sygnalu i pojawienie sie schodkowania" \
-    "KWANTYZACJA - Odsłuch - wyrazne, niemile dla ucha dziweki, prawie jak przestery. Im wiecej bitow tym sygnal bardziej przypomina oryginal." \
-    "INTERPOLACJA - obie metody (cubic i linear) radza sobie podobnie, przynajmniej na testach dla sygnalu 60hz. Odsluchowo obie metody przy 4000 tworzyly znane juz z decymacji kosmiczne dzwieki.")
+    document.add_paragraph("Przesluchiwne pliki - sing_high1, sing_low1, sing_medium1" \
+    "Dlaczego cubic? przykladowo na wykresie sin_combined Fs 16953 widac, ze cubic jest gladszy niz linear - ten ma duzo plaskich fragmentow.")
     document.save(OutputRaportFile)
